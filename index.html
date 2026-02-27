@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
   <base target="_top">
@@ -104,6 +104,11 @@
   </div>
 
   <script>
+var SERVER_DATA = {};
+    try { SERVER_DATA = JSON.parse('<?= serverData ?>'); } catch(e) { console.log('SERVER_DATA parse error:', e); }
+    var APP_CONFIG = { deploymentUrl: '<?= deploymentUrl ?>' };
+    window.APP_CONFIG = APP_CONFIG;
+    window.SERVER_DATA = SERVER_DATA;
     (function(){
       var ended=false,startedAt=Date.now(),minShowMs=2200,autoFadeMs=2800,maxWaitMs=5000;
       
