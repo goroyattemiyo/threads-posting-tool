@@ -401,10 +401,10 @@ function doGet(e) {
       '<div class="icon">' + statusIcon + '</div>' +
       '<div class="title">' + statusTitle + '</div>' +
       '<div class="desc">' + statusDesc + '</div>' +
-      '<button onclick="window.location.href='' + DEPLOYMENT_URL + '';" style="' +
+      '<a href="' + DEPLOYMENT_URL + '" style="display:inline-block;text-decoration:none;' +
       'padding:12px 32px;font-size:16px;background:linear-gradient(135deg,#00ba7c,#1da1f2);' +
       'color:#fff;border:none;border-radius:8px;cursor:pointer;margin-top:20px;' +
-      '">ツールに戻る</button>' +
+      '">ツールに戻る</a>' +
       '<p style="margin-top:12px;font-size:13px;color:#888;">' +
       '自動で戻らない場合はブックマークからアプリを開いてください' +
       '</p>' +
