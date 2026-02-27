@@ -263,12 +263,19 @@ App.startAuth = function() {
       this.showToast('\u5148\u306B\u30B9\u30D7\u30EC\u30C3\u30C9\u30B7\u30FC\u30C8\u3092\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044', 'error');
       return;
     }
-    var appUrl = (window.APP_CONFIG && window.APP_CONFIG.deploymentUrl) ? window.APP_CONFIG.deploymentUrl : '';
-    if (!appUrl) {
-      this.showToast('\u30A2\u30D7\u30EAURL\u304C\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093', 'error');
-      return;
-    }
-    var authUrl = appUrl + '?page=auth&sheetId=' + encodeURIComponent(sheetId);
-    window.open(authUrl, '_blank', 'width=600,height=700');
+    this.showToast('\u8A8D\u8A3C\u30DA\u30FC\u30B8\u3092\u53D6\u5F97\u4E2D...', 'info');
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result && result.success && result.data && result.data.authUrl) {
+          // トップレベルウィンドウで認証URLを開く（iframe脱出）
+          window.top.location.href = result.data.authUrl;
+        } else {
+          App.showToast('\u8A8D\u8A3CURL\u306E\u53D6\u5F97\u306B\u5931\u6557\u3057\u307E\u3057\u305F', 'error');
+        }
+      })
+      .withFailureHandler(function(err) {
+        App.showToast('\u30A8\u30E9\u30FC: ' + err.message, 'error');
+      })
+      .processApiRequest({ action: 'getAuthUrl', sheetId: sheetId });
   };
 </script>
