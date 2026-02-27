@@ -8,6 +8,12 @@
   <?!= HtmlService.createHtmlOutputFromFile('styles').getContent(); ?>
 </head>
 <body>
+  <script>
+    (function(){
+      var t = localStorage.getItem("threads_theme");
+      if (t === "dark") { document.documentElement.setAttribute("data-theme", "dark"); }
+    })();
+  </script>
   <!-- スプラッシュ画面 -->
   <div id="splash" style="
     position:fixed;top:0;left:0;width:100%;height:100%;

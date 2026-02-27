@@ -1,4 +1,4 @@
-<style>
+﻿<style>
 /* ベースリセット */
 * {
   margin: 0;
@@ -1709,4 +1709,313 @@ textarea:focus-visible {
   color: var(--text-tertiary);
   font-weight: 700;
 }
+
+/* ダークモード手動トグル */
+[data-theme="dark"] {
+  --bg-primary: #101010;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #262626;
+  --text-primary: #f5f5f5;
+  --text-secondary: #a3a3a3;
+  --text-tertiary: #737373;
+  --border-color: #262626;
+  --border-light: #1f1f1f;
+  --accent-color: #f5f5f5;
+  --accent-hover: #e5e5e5;
+  --success-bg: #052e16;
+  --error-bg: #450a0a;
+  --warning-bg: #451a03;
+  --info-bg: #1e3a5f;
+}
+
+[data-theme="dark"] .header {
+  background: rgba(16, 16, 16, 0.9);
+}
+
+[data-theme="dark"] .nav {
+  background: rgba(16, 16, 16, 0.95);
+}
+
+[data-theme="dark"] .input:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .btn-danger {
+  background: #450a0a;
+}
+
+[data-theme="dark"] .guide-step {
+  background: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .setup-guide-card {
+  background: linear-gradient(135deg, #0c2d3f 0%, #0a1f2e 100%) !important;
+  border-color: #1e4a5f !important;
+}
+
+/* ダークモードトグルスイッチ */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+
+.theme-toggle-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.theme-switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background: var(--border-color);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  border: none;
+  padding: 0;
+}
+
+.theme-switch.active {
+  background: var(--success-color);
+}
+
+.theme-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: var(--radius-full);
+  transition: transform var(--transition-fast);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.theme-switch.active::after {
+  transform: translateX(22px);
+}
+
+/* 設定画面ユーティリティクラス */
+.setup-guide-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  margin-bottom: 16px;
+}
+
+.setup-guide-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.setup-guide-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+.setup-guide-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: #0c4a6e;
+}
+
+[data-theme="dark"] .setup-guide-title {
+  color: #7dd3fc;
+}
+
+.setup-guide-subtitle {
+  font-size: 12px;
+  color: #0369a1;
+}
+
+[data-theme="dark"] .setup-guide-subtitle {
+  color: #38bdf8;
+}
+
+.guide-step {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+[data-theme="dark"] .guide-step {
+  background: var(--bg-tertiary);
+}
+
+.guide-step-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.guide-step-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0ea5e9;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.guide-step-number.done {
+  background: #16a34a;
+}
+
+.guide-step-title {
+  font-weight: 600;
+  color: #0c4a6e;
+}
+
+[data-theme="dark"] .guide-step-title {
+  color: #7dd3fc;
+}
+
+.guide-step-text {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+[data-theme="dark"] .guide-step-text {
+  color: var(--text-secondary);
+}
+
+.guide-input-group {
+  margin-top: 12px;
+}
+
+.guide-input-label {
+  font-size: 12px;
+  color: #0369a1;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .guide-input-label {
+  color: #38bdf8;
+}
+
+.guide-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.guide-status {
+  font-size: 11px;
+  margin-top: 4px;
+  color: #666;
+}
+
+.setup-complete {
+  padding: 12px;
+  background: #dcfce7;
+  border-radius: 8px;
+  text-align: center;
+}
+
+[data-theme="dark"] .setup-complete {
+  background: #052e16;
+}
+
+.setup-complete-title {
+  font-weight: 600;
+  color: #166534;
+}
+
+[data-theme="dark"] .setup-complete-title {
+  color: #4ade80;
+}
+
+.setup-complete-text {
+  font-size: 13px;
+  color: #15803d;
+  margin-top: 4px;
+}
+
+[data-theme="dark"] .setup-complete-text {
+  color: #86efac;
+}
+
+.info-card {
+  background: #f0f9ff;
+}
+
+[data-theme="dark"] .info-card {
+  background: var(--bg-tertiary);
+}
+
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.settings-item-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.settings-item-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-section {
+  padding: 0;
+}
+
+.nav-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.uri-notice {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #dc2626;
+}
+
+[data-theme="dark"] .uri-notice {
+  color: #fca5a5;
+}
+
+.uri-code {
+  display: block;
+  margin-top: 6px;
+  padding: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  font-size: 12px;
+  word-break: break-all;
+  color: #334155;
+}
+
+[data-theme="dark"] .uri-code {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.version-footer {
+  text-align: center;
+  padding: 16px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
 </style>
