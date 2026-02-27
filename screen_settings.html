@@ -266,9 +266,9 @@ App.startAuth = function() {
     this.showToast('\u8A8D\u8A3C\u30DA\u30FC\u30B8\u3092\u53D6\u5F97\u4E2D...', 'info');
     google.script.run
       .withSuccessHandler(function(result) {
-        if (result && result.success && result.data && result.data.authUrl) {
+        if (result && result.success && result.data && result.data.url) {
           // トップレベルウィンドウで認証URLを開く（iframe脱出）
-          window.top.location.href = result.data.authUrl;
+          window.top.location.href = result.data.url;
         } else {
           App.showToast('\u8A8D\u8A3CURL\u306E\u53D6\u5F97\u306B\u5931\u6557\u3057\u307E\u3057\u305F', 'error');
         }
