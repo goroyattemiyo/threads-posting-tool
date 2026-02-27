@@ -401,12 +401,12 @@ function doGet(e) {
       '<div class="icon">' + statusIcon + '</div>' +
       '<div class="title">' + statusTitle + '</div>' +
       '<div class="desc">' + statusDesc + '</div>' +
-      '<button onclick="window.close()" style="' +
+      '<button onclick="window.location.href='' + DEPLOYMENT_URL + '';" style="' +
       'padding:12px 32px;font-size:16px;background:linear-gradient(135deg,#00ba7c,#1da1f2);' +
       'color:#fff;border:none;border-radius:8px;cursor:pointer;margin-top:20px;' +
-      '">このウィンドウを閉じる</button>' +
+      '">ツールに戻る</button>' +
       '<p style="margin-top:12px;font-size:13px;color:#888;">' +
-      '閉じられない場合は手動でこのタブを閉じ、元の画面に戻ってください' +
+      '自動で戻らない場合はブックマークからアプリを開いてください' +
       '</p>' +
       '</div>' +
       '<script>localStorage.setItem("threads_tool_sheet_id", "' + targetSheetId + '");</script>' +
