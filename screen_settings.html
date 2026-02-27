@@ -2,7 +2,7 @@
 App.renderSettingsContent = function() {
     var sheetId = this.state.sheetId || "";
     var user = this.state.user || {};
-    var sheetUrl = "https://docs.google.com/spreadsheets/d/" + sheetId + "/edit";
+    var sheetUrl = sheetId ? "https://docs.google.com/spreadsheets/d/" + sheetId + "/edit" : "";
     var appUrl = (window.APP_CONFIG && window.APP_CONFIG.deploymentUrl) ? window.APP_CONFIG.deploymentUrl : "";
     var accounts = this.state.accounts || [];
     var activeAccount = this.state.activeAccount;
@@ -11,73 +11,81 @@ App.renderSettingsContent = function() {
     if (accounts.length > 0) {
       accounts.forEach(function(acc) {
         var isActive = activeAccount && acc.accountId === activeAccount.accountId;
-        accountsListHtml += "<div class=\"account-list-item" + (isActive ? " active" : "") + "\" data-account-id=\"" + acc.accountId + "\">" +
-          "<div class=\"account-list-info\">" +
-            (acc.profilePicUrl ? "<img src=\"" + acc.profilePicUrl + "\" class=\"account-list-pic\">" : "<div class=\"account-list-pic-placeholder\"></div>") +
-            "<div class=\"account-list-details\">" +
-              "<div class=\"account-list-name\">@" + (acc.username || acc.accountId) + "</div>" +
-              "<div class=\"account-list-id\">" + acc.userId + "</div>" +
-            "</div>" +
-          "</div>" +
-          "<div class=\"account-list-actions\">" +
-            (isActive ? "<span class=\"account-active-badge\">&#x4F7F;&#x7528;&#x4E2D;</span>" : "<button class=\"btn btn-small btn-secondary account-switch-btn\" data-account-id=\"" + acc.accountId + "\">&#x5207;&#x66FF;</button>") +
-            (accounts.length > 1 && !isActive ? "<button class=\"btn btn-small btn-danger account-delete-btn\" data-account-id=\"" + acc.accountId + "\">&#x524A;&#x9664;</button>" : "") +
-          "</div>" +
-        "</div>";
+        accountsListHtml += '<div class="account-list-item' + (isActive ? ' active' : '') + '" data-account-id="' + acc.accountId + '">' +
+          '<div class="account-list-info">' +
+            (acc.profilePicUrl ? '<img src="' + acc.profilePicUrl + '" class="account-list-pic">' : '<div class="account-list-pic-placeholder"></div>') +
+            '<div class="account-list-details">' +
+              '<div class="account-list-name">@' + (acc.username || acc.accountId) + '</div>' +
+              '<div class="account-list-id">' + acc.userId + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="account-list-actions">' +
+            (isActive ? '<span class="account-active-badge">' + '\u4F7F\u7528\u4E2D' + '</span>' : '<button class="btn btn-small btn-secondary account-switch-btn" data-account-id="' + acc.accountId + '">' + '\u5207\u66FF' + '</button>') +
+            (accounts.length > 1 && !isActive ? '<button class="btn btn-small btn-danger account-delete-btn" data-account-id="' + acc.accountId + '">' + '\u524A\u9664' + '</button>' : '') +
+          '</div>' +
+        '</div>';
       });
     } else {
-      accountsListHtml = "<div class=\"empty-state\" style=\"padding:20px;\"><div style=\"font-size:14px;color:#666;\">&#x30A2;&#x30AB;&#x30A6;&#x30F3;&#x30C8;&#x304C;&#x3042;&#x308A;&#x307E;&#x305B;&#x3093;</div></div>";
+      accountsListHtml = '<div class="empty-state" style="padding:20px;"><div style="font-size:14px;color:#666;">' + '\u30A2\u30AB\u30A6\u30F3\u30C8\u304C\u3042\u308A\u307E\u305B\u3093' + '</div></div>';
     }
 
-    return "<div class=\"settings-section\">" +
-      "<div class=\"card\" style=\"background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);border:1px solid #bae6fd;margin-bottom:16px;\">" +
-        "<div style=\"display:flex;align-items:center;gap:12px;margin-bottom:16px;\">" +
-          "<img src=\"https://files.catbox.moe/6wjxg6.webp\" style=\"width:40px;height:40px;border-radius:10px;\">" +
-          "<div>" +
-            "<div style=\"font-weight:700;font-size:16px;color:#0c4a6e;\">AutoPostTool &#x30BB;&#x30C3;&#x30C8;&#x30A2;&#x30C3;&#x30D7;&#x30AC;&#x30A4;&#x30C9;</div>" +
-            "<div style=\"font-size:12px;color:#0369a1;\">&#x4EE5;&#x4E0B;&#x306E;&#x624B;&#x9806;&#x306B;&#x6CBF;&#x3063;&#x3066;&#x8A2D;&#x5B9A;&#x3057;&#x3066;&#x304F;&#x3060;&#x3055;&#x3044;</div>" +
-          "</div>" +
-        "</div>" +
-        "<div id=\"setupGuide\">" +
-          "<div class=\"guide-step\" style=\"margin-bottom:16px;padding:12px;background:#fff;border-radius:8px;\">" +
-            "<div style=\"display:flex;align-items:center;gap:8px;margin-bottom:8px;\">" +
-              "<div style=\"width:28px;height:28px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;\">1</div>" +
-              "<div style=\"font-weight:600;color:#0c4a6e;\">&#x30B9;&#x30D7;&#x30EC;&#x30C3;&#x30C9;&#x30B7;&#x30FC;&#x30C8;&#x306E;&#x6E96;&#x5099;</div>" +
-            "</div>" +
-            "<div style=\"font-size:13px;color:#475569;line-height:1.6;\">&#x30C6;&#x30F3;&#x30D7;&#x30EC;&#x30FC;&#x30C8;&#x306E;&#x30B9;&#x30D7;&#x30EC;&#x30C3;&#x30C9;&#x30B7;&#x30FC;&#x30C8;&#x3092;&#x81EA;&#x5206;&#x306E;Google&#x30C9;&#x30E9;&#x30A4;&#x30D6;&#x306B;&#x30B3;&#x30D4;&#x30FC;&#x3057;&#x3066;&#x304F;&#x3060;&#x3055;&#x3044;&#x3002;&#x305D;&#x306E;&#x5F8C;&#x3001;&#x4E0B;&#x306E;&#x8A2D;&#x5B9A;&#x3067;URL&#x3092;&#x5165;&#x529B;&#x3057;&#x307E;&#x3059;&#x3002;</div>" +
-          "</div>" +
-          "<div class=\"guide-step\" style=\"margin-bottom:16px;padding:12px;background:#fff;border-radius:8px;\">" +
-            "<div style=\"display:flex;align-items:center;gap:8px;margin-bottom:8px;\">" +
-              "<div style=\"width:28px;height:28px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;\">2</div>" +
-              "<div style=\"font-weight:600;color:#0c4a6e;\">Meta Developer &#x30A2;&#x30D7;&#x30EA;&#x8A2D;&#x5B9A;</div>" +
-            "</div>" +
-            "<div style=\"font-size:13px;color:#475569;line-height:1.6;\">Create an app at <a href=\"https://developers.facebook.com/\" target=\"_blank\" style=\"color:#0ea5e9;\">Meta for Developers</a> and add Threads API permissions. Enter the App ID and App Secret below.</div>" +
-          "</div>" +
-          "<div class=\"guide-step\" style=\"margin-bottom:16px;padding:12px;background:#fff;border-radius:8px;\">" +
-            "<div style=\"display:flex;align-items:center;gap:8px;margin-bottom:8px;\">" +
-              "<div style=\"width:28px;height:28px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;\">3</div>" +
-              "<div style=\"font-weight:600;color:#0c4a6e;\">&#x30EA;&#x30C0;&#x30A4;&#x30EC;&#x30AF;&#x30C8;URI</div>" +
-            "</div>" +
-            "<div style=\"font-size:13px;color:#475569;line-height:1.6;\">Meta Developer&#x306E;&#x30A2;&#x30D7;&#x30EA;&#x8A2D;&#x5B9A;&#x3067;&#x3001;&#x4EE5;&#x4E0B;&#x306E;URL&#x3092;&#x30EA;&#x30C0;&#x30A4;&#x30EC;&#x30AF;&#x30C8;URI&#x306B;&#x8FFD;&#x52A0;&#x3057;&#x3066;&#x304F;&#x3060;&#x3055;&#x3044;:<br><code id=\"guideRedirectUri\" style=\"display:block;margin-top:6px;padding:8px;background:#f1f5f9;border-radius:4px;font-size:12px;word-break:break-all;color:#334155;\">(&#x4E0B;&#x306E;&#x30A2;&#x30D7;&#x30EA;URL&#x306B;&#x8868;&#x793A;)</code><div style=\"margin-top:6px;font-size:12px;color:#dc2626;\">&#x203B; &#x672B;&#x5C3E;&#x306E;&#x30B9;&#x30E9;&#x30C3;&#x30B7;&#x30E5;&#x3092;&#x6B63;&#x78BA;&#x306B;&#x4E00;&#x81F4;&#x3055;&#x305B;&#x3066;&#x304F;&#x3060;&#x3055;&#x3044;</div></div>" +
-          "</div>" +
-          "<div class=\"guide-step\" style=\"margin-bottom:16px;padding:12px;background:#fff;border-radius:8px;\">" +
-            "<div style=\"display:flex;align-items:center;gap:8px;margin-bottom:8px;\">" +
-              "<div style=\"width:28px;height:28px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;\">4</div>" +
-              "<div style=\"font-weight:600;color:#0c4a6e;\">&#x8A8D;&#x8A3C;</div>" +
-            "</div>" +
-            "<div style=\"font-size:13px;color:#475569;line-height:1.6;\">Once all settings are complete, press the &#x8A8D;&#x8A3C; button. You will be redirected to the compose screen.</div>" +
-          "</div>" +
-          (this.state.user ? "<div style=\"padding:12px;background:#dcfce7;border-radius:8px;text-align:center;\"><div style=\"font-size:20px;margin-bottom:4px;\">&#x2705;</div><div style=\"font-weight:600;color:#166534;\">&#x30BB;&#x30C3;&#x30C8;&#x30A2;&#x30C3;&#x30D7;&#x5B8C;&#x4E86;&#xFF01;</div><div style=\"font-size:13px;color:#15803d;margin-top:4px;\">Threads&#x3078;&#x306E;&#x6295;&#x7A3F;&#x3092;&#x958B;&#x59CB;&#x3067;&#x304D;&#x307E;&#x3059;&#x3002;</div><button onclick=\"App.showScreen('compose')\" class=\"btn btn-primary\" style=\"margin-top:12px;\">&#x6295;&#x7A3F;&#x753B;&#x9762;&#x3078;</button></div>" : "") +
-        "</div>" +
-      "</div>" +
-      "<div class=\"card\"><div class=\"card-title\">&#x30A2;&#x30AB;&#x30A6;&#x30F3;&#x30C8;&#x7BA1;&#x7406;</div><div class=\"account-list\">" + accountsListHtml + "</div><button id=\"importAccountBtn\" class=\"btn btn-secondary btn-full\" style=\"margin-top:8px;\">&#x1F4E5; &#x5225;&#x30B9;&#x30D7;&#x30B7;&#x304B;&#x3089;&#x30A4;&#x30F3;&#x30DD;&#x30FC;&#x30C8;</button></div>" +
-      "<div class=\"card\"><div class=\"card-title\">&#x73FE;&#x5728;&#x306E;&#x30A2;&#x30AB;&#x30A6;&#x30F3;&#x30C8;</div><div class=\"settings-item\"><span class=\"settings-item-label\">&#x30E6;&#x30FC;&#x30B6;&#x30FC;&#x540D;</span><span class=\"settings-item-value\">@" + (user.username || "&#x672A;&#x63A5;&#x7D9A;") + "</span></div></div>" +
-      "<div class=\"card\"><div class=\"card-title\">&#x63A5;&#x7D9A;&#x60C5;&#x5831;</div><div style=\"margin-bottom:16px;\"><div style=\"font-size:12px;color:#666;margin-bottom:4px;\">&#x30B9;&#x30D7;&#x30EC;&#x30C3;&#x30C9;&#x30B7;&#x30FC;&#x30C8;URL</div><div style=\"display:flex;gap:8px;\"><input type=\"text\" id=\"sheetUrlCopy\" class=\"input\" value=\"" + sheetUrl + "\" readonly style=\"font-size:11px;\"><button id=\"copySheetUrlBtn\" class=\"btn btn-secondary btn-small\">&#x30B3;&#x30D4;&#x30FC;</button></div></div><div style=\"margin-bottom:16px;\"><div style=\"font-size:12px;color:#666;margin-bottom:4px;\">&#x30A2;&#x30D7;&#x30EA;URL</div><div style=\"display:flex;gap:8px;\"><input type=\"text\" id=\"appUrlCopy\" class=\"input\" value=\"" + appUrl + "\" readonly style=\"font-size:11px;\"><button id=\"copyAppUrlBtn\" class=\"btn btn-secondary btn-small\">&#x30B3;&#x30D4;&#x30FC;</button></div></div><a href=\"" + sheetUrl + "\" target=\"_blank\" class=\"btn btn-secondary btn-full\" style=\"text-decoration:none;\">&#x30B9;&#x30D7;&#x30EC;&#x30C3;&#x30C9;&#x30B7;&#x30FC;&#x30C8;&#x3092;&#x958B;&#x304F;</a></div>" +
-      "<div class=\"card\" style=\"background:#f0f9ff;\"><div style=\"font-size:14px;\"><strong>&#x1F4A1; &#x5225;&#x306E;&#x30C7;&#x30D0;&#x30A4;&#x30B9;&#x3067;&#x4F7F;&#x3046;&#x5834;&#x5408;</strong><br><br>Copy the &#x30B9;&#x30D7;&#x30EC;&#x30C3;&#x30C9;&#x30B7;&#x30FC;&#x30C8;URL above, then<br>open this app on another phone/PC and paste it.</div></div>" +
-      "<div class=\"card\"><div class=\"card-title\">&#x64CD;&#x4F5C;</div><button id=\"reauthBtn\" class=\"btn btn-secondary btn-full\">&#x518D;&#x8A8D;&#x8A3C;</button><button id=\"disconnectBtn\" class=\"btn btn-danger btn-full\" style=\"margin-top:12px;\">&#x63A5;&#x7D9A;&#x89E3;&#x9664;</button></div>" +
-      "<div class=\"card\"><div class=\"card-title\">&#x30CA;&#x30D3;&#x30B2;&#x30FC;&#x30B7;&#x30E7;&#x30F3;</div><button id=\"goToTopBtn\" class=\"btn btn-secondary btn-full\">&#x1F3E0; &#x30C8;&#x30C3;&#x30D7;&#x306B;&#x623B;&#x308B;</button></div>" +
-      (this.state.user ? "<div class=\"card\" style=\"margin-top:16px;\"><div class=\"card-title\">&#x30AF;&#x30A4;&#x30C3;&#x30AF;&#x30CA;&#x30D3;&#x30B2;&#x30FC;&#x30B7;&#x30E7;&#x30F3;</div><div style=\"display:grid;grid-template-columns:1fr 1fr;gap:8px;\"><button onclick=\"App.showScreen('compose')\" class=\"btn btn-primary\">&#x1F4DD; &#x6295;&#x7A3F;&#x4F5C;&#x6210;</button><button onclick=\"App.showScreen('schedule')\" class=\"btn btn-secondary\">&#x23F0; &#x4E88;&#x7D04;&#x6295;&#x7A3F;</button><button onclick=\"App.showScreen('history')\" class=\"btn btn-secondary\">&#x1F4CB; &#x6295;&#x7A3F;&#x5C65;&#x6B74;</button><button onclick=\"App.showScreen('analytics')\" class=\"btn btn-secondary\">&#x1F4CA; &#x5206;&#x6790;</button></div></div>" : "") +
-    "</div>";
+    return '<div class="settings-section">' +
+      '<div class="card" style="background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);border:1px solid #bae6fd;margin-bottom:16px;">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">' +
+          '<img src="https://files.catbox.moe/6wjxg6.webp" style="width:40px;height:40px;border-radius:10px;">' +
+          '<div>' +
+            '<div style="font-weight:700;font-size:16px;color:#0c4a6e;">AutoPostTool ' + '\u30BB\u30C3\u30C8\u30A2\u30C3\u30D7\u30AC\u30A4\u30C9' + '</div>' +
+            '<div style="font-size:12px;color:#0369a1;">' + '\u4EE5\u4E0B\u306E\u624B\u9806\u306B\u6CBF\u3063\u3066\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044' + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div id="setupGuide">' +
+          '<div class="guide-step" style="margin-bottom:16px;padding:12px;background:#fff;border-radius:8px;">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+              '<div style="width:28px;height:28px;border-radius:50%;background:' + (sheetId ? '#16a34a' : '#0ea5e9') + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">' + (sheetId ? '\u2713' : '1') + '</div>' +
+              '<div style="font-weight:600;color:#0c4a6e;">' + '\u30B9\u30D7\u30EC\u30C3\u30C9\u30B7\u30FC\u30C8\u306E\u6E96\u5099' + '</div>' +
+            '</div>' +
+            '<div style="font-size:13px;color:#475569;line-height:1.6;">' + '\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u30B9\u30D7\u30EC\u30C3\u30C9\u30B7\u30FC\u30C8\u3092\u81EA\u5206\u306EGoogle\u30C9\u30E9\u30A4\u30D6\u306B\u30B3\u30D4\u30FC\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u305D\u306E\u5F8C\u3001\u4E0B\u306BURL\u3092\u8CBC\u308A\u4ED8\u3051\u3066\u4FDD\u5B58\u3057\u3066\u304F\u3060\u3055\u3044\u3002' + '</div>' +
+            '<div style="margin-top:12px;">' +
+              '<div style="font-size:12px;color:#0369a1;margin-bottom:4px;font-weight:600;">' + '\u30B9\u30D7\u30EC\u30C3\u30C9\u30B7\u30FC\u30C8URL' + '</div>' +
+              '<div style="display:flex;gap:8px;">' +
+                '<input type="text" id="sheetUrlInput" class="input" placeholder="https://docs.google.com/spreadsheets/d/xxxxx/edit" style="font-size:12px;flex:1;" value="' + (sheetId ? 'https://docs.google.com/spreadsheets/d/' + sheetId + '/edit' : '') + '">' +
+                '<button id="saveSheetUrlBtn" class="btn btn-primary btn-small" style="white-space:nowrap;">' + '\u4FDD\u5B58' + '</button>' +
+              '</div>' +
+              '<div id="sheetUrlStatus" style="font-size:11px;margin-top:4px;color:#666;"></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="guide-step" style="margin-bottom:16px;padding:12px;background:#fff;border-radius:8px;">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+              '<div style="width:28px;height:28px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">2</div>' +
+              '<div style="font-weight:600;color:#0c4a6e;">Meta Developer ' + '\u30A2\u30D7\u30EA\u8A2D\u5B9A' + '</div>' +
+            '</div>' +
+            '<div style="font-size:13px;color:#475569;line-height:1.6;"><a href="https://developers.facebook.com/" target="_blank" style="color:#0ea5e9;">Meta for Developers</a>' + '\u3067\u30A2\u30D7\u30EA\u3092\u4F5C\u6210\u3057\u3001Threads API\u306E\u6A29\u9650\u3092\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u30B9\u30D7\u30EC\u30C3\u30C9\u30B7\u30FC\u30C8\u306E\u8A2D\u5B9A\u30B7\u30FC\u30C8\u306BApp ID\u3068App Secret\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002' + '</div>' +
+          '</div>' +
+          '<div class="guide-step" style="margin-bottom:16px;padding:12px;background:#fff;border-radius:8px;">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+              '<div style="width:28px;height:28px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">3</div>' +
+              '<div style="font-weight:600;color:#0c4a6e;">' + '\u30EA\u30C0\u30A4\u30EC\u30AF\u30C8URI' + '</div>' +
+            '</div>' +
+            '<div style="font-size:13px;color:#475569;line-height:1.6;">Meta Developer' + '\u306E\u30A2\u30D7\u30EA\u8A2D\u5B9A\u3067\u3001\u4EE5\u4E0B\u306EURL\u3092\u30EA\u30C0\u30A4\u30EC\u30AF\u30C8URI\u306B\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044\uFF1A' + '<br><code id="guideRedirectUri" style="display:block;margin-top:6px;padding:8px;background:#f1f5f9;border-radius:4px;font-size:12px;word-break:break-all;color:#334155;">(' + '\u4E0B\u306E\u30A2\u30D7\u30EAURL\u306B\u8868\u793A' + ')</code><div style="margin-top:6px;font-size:12px;color:#dc2626;">' + '\u203B \u672B\u5C3E\u306E\u30B9\u30E9\u30C3\u30B7\u30E5\u3092\u6B63\u78BA\u306B\u4E00\u81F4\u3055\u305B\u3066\u304F\u3060\u3055\u3044' + '</div></div>' +
+          '</div>' +
+          '<div class="guide-step" style="margin-bottom:16px;padding:12px;background:#fff;border-radius:8px;">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+              '<div style="width:28px;height:28px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">4</div>' +
+              '<div style="font-weight:600;color:#0c4a6e;">' + '\u8A8D\u8A3C' + '</div>' +
+            '</div>' +
+            '<div style="font-size:13px;color:#475569;line-height:1.6;">' + '\u3059\u3079\u3066\u306E\u8A2D\u5B9A\u304C\u5B8C\u4E86\u3057\u305F\u3089\u3001\u8A8D\u8A3C\u30DC\u30BF\u30F3\u3092\u62BC\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u8A8D\u8A3C\u5F8C\u3001\u6295\u7A3F\u753B\u9762\u306B\u79FB\u52D5\u3057\u307E\u3059\u3002' + '</div>' +
+          '</div>' +
+          (this.state.user ? '<div style="padding:12px;background:#dcfce7;border-radius:8px;text-align:center;"><div style="font-size:20px;margin-bottom:4px;">\u2705</div><div style="font-weight:600;color:#166534;">' + '\u30BB\u30C3\u30C8\u30A2\u30C3\u30D7\u5B8C\u4E86\uFF01' + '</div><div style="font-size:13px;color:#15803d;margin-top:4px;">Threads' + '\u3078\u306E\u6295\u7A3F\u3092\u958B\u59CB\u3067\u304D\u307E\u3059\u3002' + '</div><button onclick="App.showScreen(\'compose\')" class="btn btn-primary" style="margin-top:12px;">' + '\u6295\u7A3F\u753B\u9762\u3078' + '</button></div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="card"><div class="card-title">' + '\u30A2\u30AB\u30A6\u30F3\u30C8\u7BA1\u7406' + '</div><div class="account-list">' + accountsListHtml + '</div><button id="importAccountBtn" class="btn btn-secondary btn-full" style="margin-top:8px;">\uD83D\uDCE5 ' + '\u5225\u30B9\u30D7\u30B7\u304B\u3089\u30A4\u30F3\u30DD\u30FC\u30C8' + '</button></div>' +
+      '<div class="card"><div class="card-title">' + '\u73FE\u5728\u306E\u30A2\u30AB\u30A6\u30F3\u30C8' + '</div><div class="settings-item"><span class="settings-item-label">' + '\u30E6\u30FC\u30B6\u30FC\u540D' + '</span><span class="settings-item-value">@' + (user.username || '\u672A\u63A5\u7D9A') + '</span></div></div>' +
+      '<div class="card"><div class="card-title">' + '\u63A5\u7D9A\u60C5\u5831' + '</div><div style="margin-bottom:16px;"><div style="font-size:12px;color:#666;margin-bottom:4px;">' + '\u30B9\u30D7\u30EC\u30C3\u30C9\u30B7\u30FC\u30C8URL' + '</div><div style="display:flex;gap:8px;"><input type="text" id="sheetUrlCopy" class="input" value="' + sheetUrl + '" readonly style="font-size:11px;"><button id="copySheetUrlBtn" class="btn btn-secondary btn-small">' + '\u30B3\u30D4\u30FC' + '</button></div></div><div style="margin-bottom:16px;"><div style="font-size:12px;color:#666;margin-bottom:4px;">' + '\u30A2\u30D7\u30EAURL' + '</div><div style="display:flex;gap:8px;"><input type="text" id="appUrlCopy" class="input" value="' + appUrl + '" readonly style="font-size:11px;"><button id="copyAppUrlBtn" class="btn btn-secondary btn-small">' + '\u30B3\u30D4\u30FC' + '</button></div></div><a href="' + sheetUrl + '" target="_blank" class="btn btn-secondary btn-full" style="text-decoration:none;">' + '\u30B9\u30D7\u30EC\u30C3\u30C9\u30B7\u30FC\u30C8\u3092\u958B\u304F' + '</a></div>' +
+      '<div class="card" style="background:#f0f9ff;"><div style="font-size:14px;"><strong>\uD83D\uDCA1 ' + '\u5225\u306E\u30C7\u30D0\u30A4\u30B9\u3067\u4F7F\u3046\u5834\u5408' + '</strong><br><br>' + '\u4E0A\u306E\u30B9\u30D7\u30EC\u30C3\u30C9\u30B7\u30FC\u30C8URL\u3092\u30B3\u30D4\u30FC\u3057\u3001\u5225\u306E\u30B9\u30DE\u30DB\u30FBPC\u3067\u3053\u306E\u30A2\u30D7\u30EA\u3092\u958B\u3044\u3066\u8CBC\u308A\u4ED8\u3051\u3066\u304F\u3060\u3055\u3044\u3002' + '</div></div>' +
+      '<div class="card"><div class="card-title">' + '\u64CD\u4F5C' + '</div><button id="reauthBtn" class="btn btn-secondary btn-full">' + '\u518D\u8A8D\u8A3C' + '</button><button id="disconnectBtn" class="btn btn-danger btn-full" style="margin-top:12px;">' + '\u63A5\u7D9A\u89E3\u9664' + '</button></div>' +
+      (this.state.user ? '<div class="card" style="margin-top:16px;"><div class="card-title">' + '\u30AF\u30A4\u30C3\u30AF\u30CA\u30D3\u30B2\u30FC\u30B7\u30E7\u30F3' + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button onclick="App.showScreen(\'compose\')" class="btn btn-primary">\uD83D\uDCDD ' + '\u6295\u7A3F\u4F5C\u6210' + '</button><button onclick="App.showScreen(\'schedule\')" class="btn btn-secondary">\u23F0 ' + '\u4E88\u7D04\u6295\u7A3F' + '</button><button onclick="App.showScreen(\'history\')" class="btn btn-secondary">\uD83D\uDCCB ' + '\u6295\u7A3F\u5C65\u6B74' + '</button><button onclick="App.showScreen(\'analytics\')" class="btn btn-secondary">\uD83D\uDCCA ' + '\u5206\u6790' + '</button></div></div>' : '') +
+      '<div style="text-align:center;padding:16px;font-size:11px;color:#999;">AutoPostTool v2.0.0</div>' +
+    '</div>';
   };
 
 App.bindSettingsEvents = function() {
@@ -107,13 +115,48 @@ App.bindSettingsEvents = function() {
         self.showImportAccountModal();
       });
     }
+    var saveSheetUrlBtn = document.getElementById("saveSheetUrlBtn");
+    if (saveSheetUrlBtn) {
+      saveSheetUrlBtn.addEventListener("click", function() {
+        var input = document.getElementById("sheetUrlInput");
+        var status = document.getElementById("sheetUrlStatus");
+        var url = input.value.trim();
+        var match = url.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+        if (!match) {
+          status.textContent = "URL\u304C\u6B63\u3057\u304F\u3042\u308A\u307E\u305B\u3093";
+          status.style.color = "#dc2626";
+          return;
+        }
+        var extractedId = match[1];
+        status.textContent = "\u4FDD\u5B58\u4E2D...";
+        status.style.color = "#0369a1";
+        localStorage.setItem("threads_tool_sheet_id", extractedId);
+        self.state.sheetId = extractedId;
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result && result.success) {
+              status.textContent = "\u2705 \u4FDD\u5B58\u3057\u307E\u3057\u305F\uFF01\u30DA\u30FC\u30B8\u3092\u30EA\u30ED\u30FC\u30C9\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+              status.style.color = "#16a34a";
+              App.showToast("\u30B9\u30D7\u30EC\u30C3\u30C9\u30B7\u30FC\u30C8\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F", "success");
+            } else {
+              status.textContent = "\u4FDD\u5B58\u5931\u6557: " + (result ? result.error : "unknown");
+              status.style.color = "#dc2626";
+            }
+          })
+          .withFailureHandler(function(err) {
+            status.textContent = "\u30A8\u30E9\u30FC: " + err.message;
+            status.style.color = "#dc2626";
+          })
+          .saveSheetIdToProperties(extractedId);
+      });
+    }
     var copySheetUrlBtn = document.getElementById("copySheetUrlBtn");
     if (copySheetUrlBtn) {
       copySheetUrlBtn.addEventListener("click", function() {
         var input = document.getElementById("sheetUrlCopy");
         navigator.clipboard.writeText(input.value).then(function() {
-          copySheetUrlBtn.textContent = "&#x30B3;&#x30D4;&#x30FC;&#x3057;&#x307E;&#x3057;&#x305F;&#xFF01;";
-          setTimeout(function() { copySheetUrlBtn.textContent = "Copy"; }, 2000);
+          copySheetUrlBtn.textContent = "\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\uFF01";
+          setTimeout(function() { copySheetUrlBtn.textContent = "\u30B3\u30D4\u30FC"; }, 2000);
         });
       });
     }
@@ -122,90 +165,93 @@ App.bindSettingsEvents = function() {
       copyAppUrlBtn.addEventListener("click", function() {
         var input = document.getElementById("appUrlCopy");
         navigator.clipboard.writeText(input.value).then(function() {
-          copyAppUrlBtn.textContent = "&#x30B3;&#x30D4;&#x30FC;&#x3057;&#x307E;&#x3057;&#x305F;&#xFF01;";
-          setTimeout(function() { copyAppUrlBtn.textContent = "Copy"; }, 2000);
+          copyAppUrlBtn.textContent = "\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\uFF01";
+          setTimeout(function() { copyAppUrlBtn.textContent = "\u30B3\u30D4\u30FC"; }, 2000);
         });
       });
     }
     var reauthBtn = document.getElementById("reauthBtn");
     if (reauthBtn) {
       reauthBtn.addEventListener("click", function() {
-        self.showScreen("settings");
+        self.startAuth();
       });
     }
     var disconnectBtn = document.getElementById("disconnectBtn");
     if (disconnectBtn) {
       disconnectBtn.addEventListener("click", function() {
-        if (confirm("&#x63A5;&#x7D9A;&#x89E3;&#x9664;? Your settings will remain in the spreadsheet.")) {
+        if (confirm("\u63A5\u7D9A\u3092\u89E3\u9664\u3057\u307E\u3059\u304B\uFF1F\u8A2D\u5B9A\u306F\u30B9\u30D7\u30EC\u30C3\u30C9\u30B7\u30FC\u30C8\u306B\u6B8B\u308A\u307E\u3059\u3002")) {
           localStorage.removeItem("threads_tool_sheet_id");
           localStorage.removeItem("threads_tool_folder_url");
           localStorage.removeItem("threads_setup_checklist");
-          self.state = { sheetId:null, user:null, settings:{}, posts:[], history:[], currentScreen:"connect", accounts:[], activeAccount:null, showAllAccounts:false };
+          self.state = { sheetId:null, user:null, settings:{}, posts:[], history:[], currentScreen:"settings", accounts:[], activeAccount:null, showAllAccounts:false };
           self.showScreen("settings");
-          self.showToast("&#x63A5;&#x7D9A;&#x89E3;&#x9664;ed", "success");
+          self.showToast("\u63A5\u7D9A\u3092\u89E3\u9664\u3057\u307E\u3057\u305F", "success");
         }
       });
     }
-    var goToTopBtn = document.getElementById("goToTopBtn");
-    if (goToTopBtn) {
-      goToTopBtn.addEventListener("click", function() {
-        self.showScreen("settings");
-      });
-    }
     var guideUri = document.getElementById("guideRedirectUri");
-    var guideAppUrl = window.APP_CONFIG ? window.APP_CONFIG.deploymentUrl : "";
+    var guideAppUrl = (window.APP_CONFIG && window.APP_CONFIG.deploymentUrl) ? window.APP_CONFIG.deploymentUrl : "";
     if (guideUri && guideAppUrl) {
       guideUri.textContent = guideAppUrl;
       guideUri.style.cursor = "pointer";
-      guideUri.title = "&#x30AF;&#x30EA;&#x30C3;&#x30AF;&#x3067;&#x30B3;&#x30D4;&#x30FC;";
+      guideUri.title = "\u30AF\u30EA\u30C3\u30AF\u3067\u30B3\u30D4\u30FC";
       guideUri.addEventListener("click", function() {
         App.copyToClipboard(guideAppUrl);
-        App.showToast("&#x30EA;&#x30C0;&#x30A4;&#x30EC;&#x30AF;&#x30C8;URI copied", "success");
+        App.showToast("\u30EA\u30C0\u30A4\u30EC\u30AF\u30C8URI\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F", "success");
       });
     }
   };
 
 App.loadAccounts = async function() {
     try {
-      var accounts = await this.api("getAccounts", {});
-      this.state.accounts = accounts || [];
-      var activeAccount = await this.api("getActiveAccount", {});
-      this.state.activeAccount = activeAccount;
-      console.log("&#x30A2;&#x30AB;&#x30A6;&#x30F3;&#x30C8;&#x8AAD;&#x307F;&#x8FBC;&#x307F;:", this.state.accounts.length);
-      console.log("&#x30A2;&#x30AF;&#x30C6;&#x30A3;&#x30D6;&#x30A2;&#x30AB;&#x30A6;&#x30F3;&#x30C8;:", activeAccount ? activeAccount.username : "&#x306A;&#x3057;");
+      var accounts = await this.api('getAccounts', {});
+      this.state.accounts = Array.isArray(accounts) ? accounts : [];
+      var active = await this.api('getActiveAccount', {});
+      this.state.activeAccount = active || null;
+      console.log('Active account:', this.state.activeAccount);
     } catch (e) {
-      console.error("&#x30A2;&#x30AB;&#x30A6;&#x30F3;&#x30C8;&#x53D6;&#x5F97;&#x30A8;&#x30E9;&#x30FC;:", e.message);
-      this.state.accounts = [];
-      this.state.activeAccount = null;
+      console.log('loadAccounts error:', e.message);
     }
   };
 
 App.switchAccount = async function(accountId) {
     try {
-      await this.api("setActiveAccount", { accountId: accountId });
+      this.showToast('\u30A2\u30AB\u30A6\u30F3\u30C8\u3092\u5207\u308A\u66FF\u3048\u4E2D...', 'info');
+      await this.api('switchAccount', { accountId: accountId });
       await this.loadAccounts();
-      var user = await this.api("getUserProfile", {});
+      var user = await this.api('getUserProfile', {});
       this.state.user = user.user || user;
-      this.showToast("&#x30A2;&#x30AB;&#x30A6;&#x30F3;&#x30C8;&#x3092;&#x5207;&#x308A;&#x66FF;&#x3048;&#x307E;&#x3057;&#x305F;", "success");
-      this.showScreen(this.state.currentScreen);
+      this.showToast('\u30A2\u30AB\u30A6\u30F3\u30C8\u3092\u5207\u308A\u66FF\u3048\u307E\u3057\u305F', 'success');
+      this.showScreen('settings');
     } catch (e) {
-      this.showToast("&#x5207;&#x66FF;&#x30A8;&#x30E9;&#x30FC;: " + e.message, "error");
+      this.showToast('\u5207\u66FF\u5931\u6557: ' + e.message, 'error');
     }
   };
 
 App.deleteAccount = async function(accountId) {
-    var account = this.state.accounts.find(function(acc) { return acc.accountId === accountId; });
-    var username = account ? account.username : accountId;
-    if (!confirm("&#x524A;&#x9664; @" + username + "?\n\n&#x4E88;&#x7D04;&#x6295;&#x7A3F;d posts and history will remain, but you cannot post with this account anymore.")) { return; }
+    if (!confirm('\u3053\u306E\u30A2\u30AB\u30A6\u30F3\u30C8\u3092\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F')) return;
     try {
-      await this.api("removeAccount", { accountId: accountId });
+      await this.api('deleteAccount', { accountId: accountId });
       await this.loadAccounts();
-      var user = await this.api("getUserProfile", {});
-      this.state.user = user.user || user;
-      this.showToast("&#x30A2;&#x30AB;&#x30A6;&#x30F3;&#x30C8;&#x3092;&#x524A;&#x9664;&#x3057;&#x307E;&#x3057;&#x305F;", "success");
-      this.showScreen("settings");
+      this.showToast('\u30A2\u30AB\u30A6\u30F3\u30C8\u3092\u524A\u9664\u3057\u307E\u3057\u305F', 'success');
+      this.showScreen('settings');
     } catch (e) {
-      this.showToast("&#x524A;&#x9664;&#x30A8;&#x30E9;&#x30FC;: " + e.message, "error");
+      this.showToast('\u524A\u9664\u5931\u6557: ' + e.message, 'error');
     }
+  };
+
+App.startAuth = function() {
+    var sheetId = this.state.sheetId || localStorage.getItem('threads_tool_sheet_id');
+    if (!sheetId) {
+      this.showToast('\u5148\u306B\u30B9\u30D7\u30EC\u30C3\u30C9\u30B7\u30FC\u30C8\u3092\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044', 'error');
+      return;
+    }
+    var appUrl = (window.APP_CONFIG && window.APP_CONFIG.deploymentUrl) ? window.APP_CONFIG.deploymentUrl : '';
+    if (!appUrl) {
+      this.showToast('\u30A2\u30D7\u30EAURL\u304C\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093', 'error');
+      return;
+    }
+    var authUrl = appUrl + '?page=auth&sheetId=' + encodeURIComponent(sheetId);
+    window.open(authUrl, '_blank', 'width=600,height=700');
   };
 </script>
