@@ -1,0 +1,522 @@
+<script>
+// schedule screen templates and logic
+
+
+App.renderScheduleContent = function() {
+    var sheetId = this.state.sheetId || localStorage.getItem('threads_tool_sheet_id') || '';
+    var sheetUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/edit';
+  
+    return '<div class="schedule-area">' +
+    '<div class="card" style="background:#f0f9ff;margin-bottom:16px;">' +
+      '<div style="font-size:13px;color:#1e40af;margin-bottom:8px;">' +
+        '💡 投稿済みの予約は自動で履歴へ移動します' +
+      '</div>' +
+      '<div style="font-size:12px;color:#666;">' +
+        '⏱️ 1分ごとに自動更新（スプレッドシートで直接編集も可能）' +
+      '</div>' +
+    '</div>' +
+    
+    // 全アカウント表示トグル
+    this.renderAllAccountsToggle() +
+
+    // ★Phase4: カレンダー/リスト切替
+    Phase4.renderCalendarToggle() +
+    
+    // ★Phase4: リトライ情報
+    Phase4.renderRetryInfo() +
+    
+    '<div class="post-list" id="scheduleList">' +
+      '<div class="loading">' +
+        '<div class="loading-spinner"></div>' +
+        '<div>読み込み中...</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  };
+
+App.loadScheduledPosts = async function() {
+    var self = this;
+    
+    // ナビゲーション
+    document.querySelectorAll('.nav-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var screen = this.getAttribute('data-screen');
+        self.showScreen(screen);
+      });
+    });
+    
+    // アカウント切り替えイベント
+    this.bindAccountSwitcherEvents();
+    
+    // 全アカウント表示トグルのイベント
+    this.bindAllAccountsToggleEvents(this.fetchScheduledPosts);
+    
+    // 既存のタイマーをクリア
+    if (this.scheduleRefreshTimer) {
+      clearInterval(this.scheduleRefreshTimer);
+    }
+    
+    // データを読み込み
+    await this.fetchScheduledPosts();
+    
+    // 1分ごとに自動更新
+    this.scheduleRefreshTimer = setInterval(function() {
+      if (self.state.currentScreen === 'schedule') {
+        console.log('自動更新: 予約投稿を再読み込み');
+        self.fetchScheduledPosts();
+      } else {
+        // 別の画面に移動したらタイマーを停止
+        clearInterval(self.scheduleRefreshTimer);
+      }
+    }, 1 * 60 * 1000); // 1分
+  };
+
+App.fetchScheduledPosts = async function() {
+    try {
+      var posts = await this.api('getScheduledPosts', { 
+        showAllAccounts: this.state.showAllAccounts 
+      });
+      this.state.posts = posts || [];
+      this.renderScheduleList();
+      // ★Phase4: カレンダービューにデータを渡す & 切替イベントをバインド
+      Phase4.bindViewToggleEvents(this.state.posts);
+    } catch (error) {
+      this.state.posts = [];
+      this.renderScheduleList();
+      this.showToast('読み込みエラー: ' + error.message, 'error');
+    }
+  };
+
+App.renderScheduleList = function() {
+  var self = this;
+  var container = document.getElementById('scheduleList');
+  var posts = this.state.posts || [];
+  
+  posts = posts.filter(function(post) {
+    return post.status !== 'posted';
+  });
+
+  if (posts.length === 0) {
+    container.innerHTML = '<div class="empty-state">' +
+      '<div class="empty-state-icon">📅</div>' +
+      '<div class="empty-state-title">予約投稿はありません</div>' +
+      '<div class="empty-state-desc">「投稿」タブから予約できます</div>' +
+    '</div>';
+    return;
+  }
+  
+  var html = '';
+  posts.forEach(function(post) {
+    var scheduledDate = new Date(post.scheduledTime);
+    var dateStr = scheduledDate.toLocaleString('ja-JP');
+    
+    // ステータス表示
+    var statusClass = 'scheduled';
+    var statusText = '予約済み';
+    if (post.status === 'error') {
+      statusClass = 'error';
+      statusText = '❌ 失敗';
+    } else if (post.status === 'retrying') {
+      statusClass = 'retrying';
+      statusText = '🔄 再試行中';
+    } else if (post.status === 'expired') {
+      statusClass = 'error';
+      statusText = '⏰ 期限切れ';
+    }
+    
+    // メディアタイプの表示
+    var mediaIndicator = '';
+    if (post.mediaUrl) {
+      if (post.mediaType === 'VIDEO') {
+        mediaIndicator = '<span style="background:#9333ea;color:white;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:8px;">🎬 動画</span>';
+      } else {
+        mediaIndicator = '<span style="background:#2563eb;color:white;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:8px;">📷 画像</span>';
+      }
+    }
+    
+    // サムネイル表示
+    var thumbnail = '';
+    if (post.mediaUrl) {
+      if (post.mediaType === 'VIDEO') {
+        thumbnail = '<div style="margin:8px 0;">' +
+          '<video src="' + post.mediaUrl + '" style="max-width:100%;max-height:120px;border-radius:8px;background:#000;"></video>' +
+        '</div>';
+      } else {
+        thumbnail = '<div style="margin:8px 0;">' +
+          '<img src="' + post.mediaUrl + '" style="max-width:100%;max-height:120px;border-radius:8px;object-fit:cover;">' +
+        '</div>';
+      }
+    }
+    
+    // エラーメッセージ表示
+    var errorBox = '';
+    if (post.status === 'error' && post.errorMessage) {
+      errorBox = '<div style="background:#fee2e2;border:1px solid #fecaca;border-radius:8px;padding:8px;margin:8px 0;font-size:12px;color:#dc2626;">' +
+        '<strong>エラー:</strong> ' + self.escapeHtml(post.errorMessage) +
+      '</div>';
+    }
+    
+    // アクションボタン
+    var actions = '<div class="post-item-actions" style="display:flex;gap:8px;flex-wrap:wrap;">';
+    if (post.status === 'error') {
+      actions += '<button class="btn btn-primary btn-small" onclick="App.retryPost(\'' + post.id + '\')">🔄 再試行</button>';
+    }
+    actions += '<button class="btn btn-secondary btn-small" onclick="App.openEditModal(\'' + post.id + '\')">✏️ 編集</button>';
+    actions += '<button class="btn btn-danger btn-small" onclick="App.deletePost(\'' + post.id + '\')">🗑️ 削除</button>';
+    actions += '</div>';
+    
+    // アカウントラベル（全アカウント表示時のみ）
+    var accountLabel = '';
+    if (self.state.showAllAccounts && post.accountUsername) {
+      accountLabel = '<span class="account-label">@' + post.accountUsername + '</span>';
+    }
+    
+    html += '<div class="post-item" id="post-' + post.id + '" style="' + (post.status === 'error' ? 'border-left:3px solid #dc2626;' : '') + '">' +
+      '<div class="post-item-header">' +
+        '<span class="post-item-status ' + statusClass + '" style="' + (post.status === 'error' ? 'background:#fee2e2;color:#dc2626;' : '') + '">' + statusText + '</span>' +
+        accountLabel +
+        mediaIndicator +
+        '<span class="post-item-time">' + dateStr + '</span>' +
+      '</div>' +
+      '<div class="post-item-text">' + self.escapeHtml(post.text) + '</div>' +
+      thumbnail +
+      errorBox +
+      actions +
+    '</div>';
+  });
+  
+  container.innerHTML = html;
+};
+
+
+
+// ===========================================
+// Phase 4: 予約可視性 & 安定性 & コンテンツ支援
+// ===========================================
+
+var Phase4 = {
+
+  // -----------------------------------------
+  // 4-1. カレンダービュー
+  // -----------------------------------------
+
+  _calendarDate: null, // 表示中の月（Dateオブジェクト）
+  _calendarPosts: [],  // 予約投稿データ
+
+  // カレンダー表示エリアHTML
+  renderCalendarToggle: function() {
+    return '<div class="view-toggle-area">' +
+      '<div class="view-toggle">' +
+        '<button type="button" class="view-toggle-btn active" data-view="list">📋 リスト</button>' +
+        '<button type="button" class="view-toggle-btn" data-view="calendar">📅 カレンダー</button>' +
+      '</div>' +
+    '</div>' +
+    '<div id="calendarView" style="display:none;">' +
+      '<div id="calendarContainer"></div>' +
+    '</div>';
+  },
+
+  // カレンダーを描画
+  renderCalendar: function(posts) {
+    this._calendarPosts = posts || [];
+
+    if (!this._calendarDate) {
+      this._calendarDate = new Date();
+    }
+
+    var container = document.getElementById('calendarContainer');
+    if (!container) return;
+
+    var year = this._calendarDate.getFullYear();
+    var month = this._calendarDate.getMonth();
+
+    // 月の情報
+    var firstDay = new Date(year, month, 1);
+    var lastDay = new Date(year, month + 1, 0);
+    var startDayOfWeek = firstDay.getDay(); // 0=日
+    var daysInMonth = lastDay.getDate();
+
+    var monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+
+    // 日付ごとの投稿数をカウント
+    var postsByDate = {};
+    this._calendarPosts.forEach(function(post) {
+      if (post.scheduledTime && post.status !== 'posted') {
+        var d = new Date(post.scheduledTime);
+        var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        if (!postsByDate[key]) postsByDate[key] = [];
+        postsByDate[key].push(post);
+      }
+    });
+
+    var today = new Date();
+    var todayKey = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+
+    // ヘッダー
+    var html = '<div class="cal-header">' +
+      '<button type="button" class="cal-nav-btn" id="calPrev">◀</button>' +
+      '<div class="cal-month-label">' + year + '年 ' + monthNames[month] + '</div>' +
+      '<button type="button" class="cal-nav-btn" id="calNext">▶</button>' +
+    '</div>';
+
+    // 曜日ヘッダー
+    html += '<div class="cal-weekdays">';
+    var weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    weekdays.forEach(function(wd, i) {
+      var color = i === 0 ? 'var(--error-color)' : (i === 6 ? 'var(--info-color)' : 'var(--text-tertiary)');
+      html += '<div class="cal-weekday" style="color:' + color + ';">' + wd + '</div>';
+    });
+    html += '</div>';
+
+    // 日付グリッド
+    html += '<div class="cal-grid">';
+
+    // 前月の空白
+    for (var blank = 0; blank < startDayOfWeek; blank++) {
+      html += '<div class="cal-cell cal-cell-empty"></div>';
+    }
+
+    // 日付セル
+    for (var day = 1; day <= daysInMonth; day++) {
+      var dateKey = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      var dayPosts = postsByDate[dateKey] || [];
+      var isToday = dateKey === todayKey;
+      var dayOfWeek = new Date(year, month, day).getDay();
+
+      var cellClass = 'cal-cell';
+      if (isToday) cellClass += ' cal-cell-today';
+      if (dayPosts.length > 0) cellClass += ' cal-cell-has-posts';
+
+      var dayColor = '';
+      if (dayOfWeek === 0) dayColor = 'color:var(--error-color);';
+      if (dayOfWeek === 6) dayColor = 'color:var(--info-color);';
+
+      html += '<div class="' + cellClass + '" data-date="' + dateKey + '">';
+      html += '<div class="cal-day-num" style="' + dayColor + '">' + day + '</div>';
+
+      if (dayPosts.length > 0) {
+        // ドットインジケーター
+        var dotCount = Math.min(dayPosts.length, 3);
+        html += '<div class="cal-dots">';
+        for (var di = 0; di < dotCount; di++) {
+          var dotColor = dayPosts[di].status === 'error' ? 'var(--error-color)' : 'var(--accent-color)';
+          html += '<div class="cal-dot" style="background:' + dotColor + ';"></div>';
+        }
+        if (dayPosts.length > 3) {
+          html += '<div class="cal-dot-more">+' + (dayPosts.length - 3) + '</div>';
+        }
+        html += '</div>';
+      }
+
+      html += '</div>';
+    }
+
+    // 末尾の空白
+    var totalCells = startDayOfWeek + daysInMonth;
+    var remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (var rc = 0; rc < remainingCells; rc++) {
+      html += '<div class="cal-cell cal-cell-empty"></div>';
+    }
+
+    html += '</div>';
+
+    container.innerHTML = html;
+
+    // イベントをバインド
+    this.bindCalendarEvents();
+  },
+
+  // カレンダーのイベント
+  bindCalendarEvents: function() {
+    var self = this;
+
+    // 前月/次月ナビゲーション
+    var prevBtn = document.getElementById('calPrev');
+    var nextBtn = document.getElementById('calNext');
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function() {
+        self._calendarDate.setMonth(self._calendarDate.getMonth() - 1);
+        self.renderCalendar(self._calendarPosts);
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function() {
+        self._calendarDate.setMonth(self._calendarDate.getMonth() + 1);
+        self.renderCalendar(self._calendarPosts);
+      });
+    }
+
+    // 日付セルのクリック
+    document.querySelectorAll('.cal-cell[data-date]').forEach(function(cell) {
+      cell.addEventListener('click', function() {
+        var dateKey = this.getAttribute('data-date');
+        self.showDayDetail(dateKey);
+      });
+    });
+  },
+
+  // 日付の詳細モーダル
+  showDayDetail: function(dateKey) {
+    var self = this;
+    var parts = dateKey.split('-');
+    var dateLabel = parseInt(parts[1]) + '月' + parseInt(parts[2]) + '日';
+
+    var dayPosts = this._calendarPosts.filter(function(p) {
+      if (!p.scheduledTime || p.status === 'posted') return false;
+      var d = new Date(p.scheduledTime);
+      var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      return k === dateKey;
+    });
+
+    // 時間順にソート
+    dayPosts.sort(function(a, b) {
+      return new Date(a.scheduledTime) - new Date(b.scheduledTime);
+    });
+
+    var overlay = document.createElement('div');
+    overlay.id = 'dayDetailModal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:1000;padding:20px;';
+
+    var listHtml = '';
+    if (dayPosts.length === 0) {
+      listHtml = '<div style="text-align:center;padding:24px;color:var(--text-tertiary);">' +
+        '<div style="font-size:14px;">予約投稿はありません</div>' +
+      '</div>';
+    } else {
+      dayPosts.forEach(function(post) {
+        var time = new Date(post.scheduledTime);
+        var timeStr = String(time.getHours()).padStart(2, '0') + ':' + String(time.getMinutes()).padStart(2, '0');
+        var preview = (post.text || '').substring(0, 50);
+        if ((post.text || '').length > 50) preview += '...';
+
+        var statusDot = post.status === 'error'
+          ? '<span style="color:var(--error-color);">●</span>'
+          : '<span style="color:var(--success-color);">●</span>';
+
+        var mediaIcon = '';
+        if (post.mediaUrl) {
+          mediaIcon = post.mediaType === 'VIDEO' ? ' 🎬' : ' 📷';
+        }
+
+        listHtml += '<div style="padding:12px;border-bottom:1px solid var(--border-light);display:flex;gap:12px;align-items:flex-start;">' +
+          '<div style="font-size:16px;font-weight:700;color:var(--text-primary);white-space:nowrap;min-width:48px;">' + timeStr + '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-size:13px;color:var(--text-primary);line-height:1.5;">' +
+              statusDot + ' ' + App.escapeHtml(preview) + mediaIcon +
+            '</div>' +
+            (post.status === 'error' ? '<div style="font-size:11px;color:var(--error-color);margin-top:2px;">エラー</div>' : '') +
+          '</div>' +
+          '<button class="day-detail-edit-btn btn btn-small btn-secondary" data-post-id="' + post.id + '" style="flex-shrink:0;">編集</button>' +
+        '</div>';
+      });
+    }
+
+    // 新規予約ボタン
+    var addBtnHtml = '<div style="padding:12px;">' +
+      '<button id="dayDetailAddBtn" class="btn btn-primary btn-full" data-date="' + dateKey + '">＋ この日に予約を追加</button>' +
+    '</div>';
+
+    overlay.innerHTML =
+      '<div style="background:var(--bg-primary);border-radius:var(--radius-xl);max-width:420px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;">' +
+        '<div style="padding:20px 20px 16px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">' +
+          '<h3 style="margin:0;font-size:18px;font-weight:700;">' + dateLabel + ' の予約</h3>' +
+          '<button id="closeDayDetail" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text-tertiary);">✕</button>' +
+        '</div>' +
+        '<div style="overflow-y:auto;flex:1;">' + listHtml + '</div>' +
+        addBtnHtml +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    // 閉じる
+    document.getElementById('closeDayDetail').addEventListener('click', function() {
+      overlay.remove();
+    });
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    // 編集ボタン
+    overlay.querySelectorAll('.day-detail-edit-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var postId = this.getAttribute('data-post-id');
+        overlay.remove();
+        App.openEditModal(postId);
+      });
+    });
+
+    // 新規予約ボタン
+    var addBtn = document.getElementById('dayDetailAddBtn');
+    if (addBtn) {
+      addBtn.addEventListener('click', function() {
+        var targetDate = this.getAttribute('data-date');
+        overlay.remove();
+        // compose画面に遷移して予約モードにする
+        App.showScreen('compose');
+        setTimeout(function() {
+          // 予約モードに切替
+          var scheduleOption = document.querySelector('.post-option[data-type="schedule"]');
+          if (scheduleOption) scheduleOption.click();
+          // 日付を設定（9:00にデフォルト）
+          var scheduleTimeEl = document.getElementById('scheduleTime');
+          if (scheduleTimeEl) {
+            scheduleTimeEl.value = targetDate + 'T09:00';
+          }
+        }, 200);
+      });
+    }
+  },
+
+  // ビュー切り替えのイベントをバインド
+  bindViewToggleEvents: function(posts) {
+    var self = this;
+    var toggleBtns = document.querySelectorAll('.view-toggle-btn');
+    var listView = document.getElementById('scheduleList');
+    var calendarView = document.getElementById('calendarView');
+
+    if (!toggleBtns.length || !listView || !calendarView) return;
+
+    toggleBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        toggleBtns.forEach(function(b) { b.classList.remove('active'); });
+        this.classList.add('active');
+
+        var view = this.getAttribute('data-view');
+        if (view === 'calendar') {
+          listView.style.display = 'none';
+          calendarView.style.display = 'block';
+          self.renderCalendar(posts);
+        } else {
+          listView.style.display = 'block';
+          calendarView.style.display = 'none';
+        }
+      });
+    });
+  },
+
+  // -----------------------------------------
+  // 4-2. エラーリトライの自動化（バックエンドで実行）
+  //      フロント側: リトライ設定の表示
+  // -----------------------------------------
+
+  renderRetryInfo: function() {
+    return '<div style="background:var(--bg-tertiary);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--text-secondary);margin-top:8px;">' +
+      '🔄 エラーの投稿は最大3回まで5分間隔で自動再試行されます' +
+    '</div>';
+  },
+
+  // -----------------------------------------
+  // Phase 4 初期化
+  // -----------------------------------------
+  init: function() {
+    console.log('Phase4 初期化完了');
+  }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  Phase4.init();
+});
+
+</script>

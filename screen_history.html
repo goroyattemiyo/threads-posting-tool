@@ -1,0 +1,124 @@
+<script>
+// history screen templates and logic
+
+
+App.renderHistoryContent = function() {
+    return '<div class="post-list">' +
+    
+    // 全アカウント表示トグル
+    '<div style="padding:16px 16px 0;">' +
+      this.renderAllAccountsToggle() +
+    '</div>' +
+    
+    '<div id="historyList">' +
+      '<div class="loading">' +
+        '<div class="loading-spinner"></div>' +
+        '<div>読み込み中...</div>' +
+      '</div>' +
+    '</div>' +
+    '</div>';
+  };
+
+App.loadHistory = async function() {
+    var self = this;
+    
+    document.querySelectorAll('.nav-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var screen = this.getAttribute('data-screen');
+        self.showScreen(screen);
+      });
+    });
+    
+    // アカウント切り替えイベント
+    this.bindAccountSwitcherEvents();
+    
+    // 全アカウント表示トグルのイベント
+    this.bindAllAccountsToggleEvents(this.fetchHistory);
+    
+    console.log('=== loadHistory start ===');
+    console.log('sheetId:', this.state.sheetId);
+    
+    await this.fetchHistory();
+  };
+
+App.fetchHistory = async function() {
+    try {
+      var history = await this.api('getHistory', { 
+        showAllAccounts: this.state.showAllAccounts 
+      });
+      console.log('history received:', history);
+      this.state.history = history || [];
+      this.renderHistoryList();
+    } catch (error) {
+      console.error('loadHistory error:', error);
+      this.state.history = [];
+      this.renderHistoryList();
+      this.showToast('読み込みエラー: ' + error.message, 'error');
+    }
+  };
+
+App.renderHistoryList = function() {
+    var self = this;
+    var container = document.getElementById('historyList');
+    var history = this.state.history || [];
+    
+    if (history.length === 0) {
+      container.innerHTML = '<div class="empty-state">' +
+        '<div class="empty-state-icon">📋</div>' +
+        '<div class="empty-state-title">投稿履歴はありません</div>' +
+        '<div class="empty-state-desc">投稿すると履歴が表示されます</div>' +
+      '</div>';
+      return;
+    }
+    
+    var html = '';
+    history.forEach(function(item) {
+      var postedDate = new Date(item.postedAt);
+      var dateStr = postedDate.toLocaleString('ja-JP');
+      
+      // メディアタイプの表示
+      var mediaIndicator = '';
+      if (item.mediaUrl) {
+        if (item.mediaType === 'VIDEO') {
+          mediaIndicator = '<span style="background:#9333ea;color:white;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:8px;">🎬 動画</span>';
+        } else {
+          mediaIndicator = '<span style="background:#2563eb;color:white;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:8px;">📷 画像</span>';
+        }
+      }
+      
+      // サムネイル表示
+      var thumbnail = '';
+      if (item.mediaUrl) {
+        if (item.mediaType === 'VIDEO') {
+          thumbnail = '<div style="margin:12px 0;">' +
+            '<video src="' + item.mediaUrl + '" style="max-width:100%;max-height:200px;border-radius:8px;background:#000;" controls></video>' +
+          '</div>';
+        } else {
+          thumbnail = '<div style="margin:12px 0;">' +
+            '<img src="' + item.mediaUrl + '" style="max-width:100%;max-height:200px;border-radius:8px;object-fit:cover;">' +
+          '</div>';
+        }
+      }
+      
+      // アカウントラベル（全アカウント表示時のみ）
+      var accountLabel = '';
+      if (self.state.showAllAccounts && item.accountUsername) {
+        accountLabel = '<span class="account-label">@' + item.accountUsername + '</span>';
+      }
+      
+      html += '<div class="post-item">' +
+        '<div class="post-item-header">' +
+          '<span class="post-item-status posted">投稿済み</span>' +
+          accountLabel +
+          mediaIndicator +
+          '<span class="post-item-time">' + dateStr + '</span>' +
+        '</div>' +
+        '<div class="post-item-text">' + self.escapeHtml(item.text) + '</div>' +
+        thumbnail +
+      '</div>';
+    });
+    
+    container.innerHTML = html;
+  };
+
+</script>

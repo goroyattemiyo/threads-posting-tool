@@ -1,0 +1,413 @@
+﻿<script>
+// app.html core logic
+
+var App = {};
+App.state = {
+    sheetId: null,
+    user: null,
+    settings: {},
+    posts: [],
+    history: [],
+    currentScreen: 'connect',
+    // 複数アカウント対応
+    accounts: [],
+    activeAccount: null,
+    showAllAccounts: false
+  };
+
+App.getInAppBrowserType = function() {
+    var ua = navigator.userAgent || '';
+    if (/Line/i.test(ua)) return 'line';
+    if (/Instagram/i.test(ua)) return 'instagram';
+    if (/FBAN|FBAV/i.test(ua)) return 'facebook';
+    if (/Twitter/i.test(ua)) return 'twitter';
+    if (/MicroMessenger/i.test(ua)) return 'wechat';
+    return 'other';
+  };
+
+App.renderInAppWarning = function() {
+    if (!this.isInAppBrowser()) {
+      return '';
+    }
+    
+    return '<div class="card" style="background:linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);border:none;margin-bottom:20px;box-shadow:0 2px 8px rgba(255,193,7,0.3);">' +
+      '<div style="display:flex;align-items:flex-start;gap:12px;">' +
+        '<div style="font-size:24px;">⚠️</div>' +
+        '<div style="flex:1;">' +
+          '<div style="font-weight:bold;color:#856404;margin-bottom:6px;font-size:14px;">アプリ内ブラウザで開いています</div>' +
+          '<p style="font-size:13px;color:#856404;margin-bottom:12px;line-height:1.5;">' +
+            'このブラウザでは正常に動作しない場合があります。' +
+          '</p>' +
+          
+          // アコーディオン
+          '<div id="inAppAccordion" style="margin-bottom:12px;">' +
+            '<div id="inAppAccordionToggle" style="cursor:pointer;color:#856404;font-size:13px;font-weight:bold;display:flex;align-items:center;gap:4px;">' +
+              '<span id="inAppAccordionIcon">▶</span> 外部ブラウザで開く方法' +
+            '</div>' +
+            '<div id="inAppAccordionContent" style="display:none;margin-top:8px;padding:12px;background:rgba(255,255,255,0.7);border-radius:8px;font-size:12px;color:#856404;line-height:1.6;">' +
+              '<div style="margin-bottom:8px;">' +
+                '<strong>LINE の場合</strong><br>' +
+                '右上の <strong>⋮</strong> → 「<strong>既定のブラウザで開く</strong>」' +
+              '</div>' +
+              '<div style="margin-bottom:8px;">' +
+                '<strong>Instagram / Facebook の場合</strong><br>' +
+                '右上の <strong>⋮</strong> → 「<strong>ブラウザで開く</strong>」' +
+              '</div>' +
+              '<div>' +
+                '<strong>その他のアプリ</strong><br>' +
+                '下のボタンでURLをコピーして<br>Safari / Chrome に貼り付けてください' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          
+          '<button id="copyUrlBtnInApp" class="btn btn-full" style="background:#856404;color:#fff;border:none;font-weight:bold;padding:10px 16px;">' +
+            '📋 URLをコピー' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  };
+
+App.bindInAppWarningEvents = function() {
+    var self = this;
+    
+    // アコーディオントグル
+    var toggle = document.getElementById('inAppAccordionToggle');
+    var content = document.getElementById('inAppAccordionContent');
+    var icon = document.getElementById('inAppAccordionIcon');
+    
+    if (toggle && content && icon) {
+      toggle.addEventListener('click', function() {
+        if (content.style.display === 'none') {
+          content.style.display = 'block';
+          icon.textContent = '▼';
+        } else {
+          content.style.display = 'none';
+          icon.textContent = '▶';
+        }
+      });
+    }
+    
+    // URLコピーボタン
+    var copyBtn = document.getElementById('copyUrlBtnInApp');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function() {
+        self.copyToClipboard(window.location.href);
+      });
+    }
+  };
+
+App.isInAppBrowser = function() {
+    var ua = navigator.userAgent || navigator.vendor || '';
+    var patterns = [
+      /Line/i,        // LINE
+      /FBAN/i,        // Facebook
+      /FBAV/i,        // Facebook
+      /Instagram/i,   // Instagram
+      /Twitter/i,     // Twitter/X
+      /MicroMessenger/i  // WeChat
+    ];
+    return patterns.some(function(pattern) {
+      return pattern.test(ua);
+    });
+  };
+
+App.copyToClipboard = function(text) {
+    var self = this;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function() {
+        self.showToast('URLをコピーしました。外部ブラウザに貼り付けてください', 'success');
+      }).catch(function() {
+        self.fallbackCopyToClipboard(text);
+      });
+    } else {
+      self.fallbackCopyToClipboard(text);
+    }
+  };
+
+App.fallbackCopyToClipboard = function(text) {
+    var textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      this.showToast('URLをコピーしました。外部ブラウザに貼り付けてください', 'success');
+    } catch (e) {
+      this.showToast('コピーに失敗しました', 'error');
+    }
+    document.body.removeChild(textArea);
+  };
+
+App.init = async function() {
+  var self = this;
+  
+  console.log('=== init 開始 ===');
+  
+  // サーバーからの初期データがあれば使用
+  if (typeof SERVER_DATA !== 'undefined' && SERVER_DATA.sheetId) {
+    console.log('サーバーデータを使用:', SERVER_DATA.sheetId);
+    
+    // 全てのデータをセット（API呼び出し不要）
+    this.state.sheetId = SERVER_DATA.sheetId;
+    this.state.settings = SERVER_DATA.settings || {};
+    this.state.user = SERVER_DATA.user || null;
+    this.state.accounts = SERVER_DATA.accounts || [];
+    this.state.activeAccount = SERVER_DATA.activeAccount || null;
+    this.state.tokenWarnings = SERVER_DATA.tokenWarnings || [];
+    
+    localStorage.setItem('threads_tool_sheet_id', SERVER_DATA.sheetId);
+    
+    // 設定が完了しているか判定
+    var settings = SERVER_DATA.settings || {};
+    var hasToken = settings.access_token && settings.access_token !== '';
+    if (hasToken) {
+      this.showScreen(SERVER_DATA.initialScreen || 'compose');
+    } else if (settings.app_id) {
+      this.showScreen('settings');
+    } else {
+      this.showScreen('settings');
+    }
+    return;
+  }
+  
+  // フォールバック: localStorageから復元（従来の処理）
+  var savedSheetId = localStorage.getItem('threads_tool_sheet_id');
+  console.log('Saved sheetId:', savedSheetId);
+  
+  if (savedSheetId) {
+    this.state.sheetId = savedSheetId;
+    
+    try {
+      var settings = await this.api('getSettings', {});
+      this.state.settings = settings;
+      
+      if (settings && settings.access_token && settings.access_token !== '') {
+        try {
+          var user = await this.api('getUserProfile', {});
+          this.state.user = user.user || user;
+          await this.loadAccounts();
+          this.showScreen('compose');
+          return;
+        } catch (e) {
+          console.log('getUserProfile error:', e.message);
+          this.showScreen('settings');
+          return;
+        }
+      } else if (settings.app_id) {
+        this.showScreen('settings');
+        return;
+      }
+    } catch (e) {
+      console.log('getSettings error:', e.message);
+    }
+  }
+  
+  console.log('設定画面を表示');
+  this.showScreen('settings');
+};
+
+App.handleOAuthCallback = async function(code) {
+  var self = this;
+  
+  this.showScreen('loading');
+  this.showToast('認証処理中...', 'info');
+  
+  // 既にこのコードを処理中かチェック
+  var processingCode = sessionStorage.getItem('processing_oauth_code');
+  if (processingCode === code) {
+    console.log('This code is already being processed, skipping...');
+    // URLをクリーンにする
+    if (window.history && window.history.replaceState) {
+      var cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+    this.showScreen('settings');
+    return true;
+  }
+  
+  // 処理中のコードを記録
+  sessionStorage.setItem('processing_oauth_code', code);
+  
+  try {
+    var sheetId = localStorage.getItem('threads_tool_sheet_id');
+    if (!sheetId) {
+      this.showToast('シートIDが見つかりません', 'error');
+      this.showScreen('settings');
+      return true;
+    }
+    
+    this.state.sheetId = sheetId;
+    
+    // まず既存の認証状態をチェック
+    var settings = await this.api('getSettings', {});
+    console.log('Current settings:', settings);
+    
+    if (settings && settings.access_token && settings.access_token !== '') {
+      // すでに認証済み
+      console.log('Already authenticated, skipping token exchange');
+      
+      // URLをクリーンにする
+      if (window.history && window.history.replaceState) {
+        var cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+      
+      var user = await this.api('getUserProfile', {});
+      this.state.user = user.user || user;
+      this.state.settings = settings;
+      await this.loadAccounts();
+      sessionStorage.removeItem('processing_oauth_code');
+      this.showToast('認証済みです', 'success');
+      this.showScreen('compose');
+      return true;
+    }
+    
+    // 認証されていない場合のみトークン交換
+    var tokenResult = await this.api('exchangeToken', { code: code });
+    console.log('Token result:', tokenResult);
+    
+    var user = await this.api('getUserProfile', {});
+    this.state.user = user.user || user;
+        // アカウント情報を取得
+    await this.loadAccounts();
+    // URLをクリーンにする
+    if (window.history && window.history.replaceState) {
+      var cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+    
+    sessionStorage.removeItem('processing_oauth_code');
+    this.showToast('認証が完了しました！', 'success');
+    this.showScreen('compose');
+    
+    return true;
+  } catch (error) {
+    console.error('OAuth callback error:', error);
+    
+    // URLをクリーンにする
+    if (window.history && window.history.replaceState) {
+      var cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+    
+    sessionStorage.removeItem('processing_oauth_code');
+    
+    // Invalid verification code の場合は再認証を促す
+    if (error.message && error.message.indexOf('Invalid verification code') !== -1) {
+      this.showToast('認証コードが無効です。再度認証してください。', 'error');
+    } else {
+      this.showToast('認証エラー: ' + error.message, 'error');
+    }
+    this.showScreen('settings');
+    return true;
+  }
+};
+
+App.api = function(action, params) {
+  var self = this;
+  params = params || {};
+  params.action = action;
+  params.sheetId = this.state.sheetId;
+  
+  console.log('=== API call ===');
+  console.log('action:', action);
+  console.log('sheetId:', params.sheetId);
+  console.log('sheetId type:', typeof params.sheetId);
+  console.log('sheetId is null:', params.sheetId === null);
+  console.log('sheetId is empty:', params.sheetId === '');
+  
+  return new Promise(function(resolve, reject) {
+    google.script.run
+      .withSuccessHandler(function(result) {
+        console.log('=== API success ===');
+        console.log('result:', JSON.stringify(result));
+        if (result === null || result === undefined) {
+          reject(new Error('サーバーから応答がありません'));
+        } else if (result.success) {
+          resolve(result.data);
+        } else {
+          reject(new Error(result.error || '不明なエラー'));
+        }
+      })
+      .withFailureHandler(function(error) {
+        console.log('=== API failure ===');
+        console.log('error:', error);
+        reject(error);
+      })
+      .processApiRequest(params);
+  });
+};
+
+App.extractSheetId = function(url) {
+    if (!url) return null;
+    var match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
+  };
+
+App.showScreen = function(screen) {
+
+    // ★Phase1: compose 画面から離れる時に自動保存を実行して停止
+if (this.state.currentScreen === 'compose' && screen !== 'compose') {
+  Phase1.saveDraft();
+  Phase1.stopAutoSave();
+}
+    this.state.currentScreen = screen;
+    var container = document.getElementById('app');
+    
+    switch (screen) {
+      case 'welcome':
+      case 'connect':  // connect も welcome として扱う
+        document.getElementById('app').innerHTML = this.renderWelcomeScreen();
+        this.bindWelcomeEvents();
+        break;
+      case 'loading':
+        container.innerHTML = this.renderLoadingScreen();
+        break;
+      case 'sheet-created':
+        container.innerHTML = this.renderSheetCreatedScreen();
+        this.bindSheetCreatedEvents();
+        break;
+      case 'setup':
+        document.getElementById('app').innerHTML = this.renderSetupScreen();
+        this.bindSetupEvents();
+        break;
+      case 'setup-auth':
+        container.innerHTML = this.renderSetupAuthScreen();
+        this.bindSetupAuthEvents();
+        break;
+      case 'compose':
+        container.innerHTML = this.renderMainLayout('compose');
+        this.bindComposeEvents();
+        break;
+      case 'schedule':
+        container.innerHTML = this.renderMainLayout('schedule');
+        this.loadScheduledPosts();
+        break;
+      case 'analytics':
+        container.innerHTML = this.renderMainLayout('analytics');
+        this.loadAnalytics();
+        break;
+      case 'history':
+        container.innerHTML = this.renderMainLayout('history');
+        this.loadHistory();
+        break;
+      case 'settings':
+        container.innerHTML = this.renderMainLayout('settings');
+        this.bindSettingsEvents();
+        break;
+      default:
+        container.innerHTML = this.renderLoadingScreen();
+    }
+  };
+
+App.renderLoadingScreen = function() {
+    return '<div class="loading">' +
+      '<div class="loading-spinner"></div>' +
+      '<div>読み込み中...</div>' +
+    '</div>';
+  };
+
+</script>

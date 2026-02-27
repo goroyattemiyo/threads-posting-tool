@@ -1,0 +1,885 @@
+﻿<script>
+// app.html UI helpers and layout
+
+
+App.renderWelcomeScreen = function() {
+    var settings = this.state.settings || {};
+    var appUrl = settings.app_url || '';
+    var hasAppId = settings.app_id ? true : false;
+    
+    // テンプレートIDと比較して、自分のコピーかどうか判定
+    var TEMPLATE_SHEET_ID = '1mkXIArfMQvsHg0RLqcmicMHb6wU77eohkPDz2yHCKnI';
+    var currentSheetId = this.state.sheetId || '';
+    var isOwnCopy = currentSheetId && currentSheetId !== TEMPLATE_SHEET_ID;
+    
+    // アプリ内ブラウザ警告
+    var inAppWarning = this.renderInAppWarning();
+    
+    // 初めての方セクション（テンプレートからのアクセス時のみ表示）
+    var beginnerSection = '';
+    if (!hasAppId && !isOwnCopy) {
+      beginnerSection = '<div class="card">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">' +
+          '<div style="font-size:24px;">🚀</div>' +
+          '<div style="font-weight:bold;font-size:16px;">初めての方</div>' +
+        '</div>' +
+        
+        '<div style="background:#f8f9fa;border-radius:12px;padding:16px;margin-bottom:16px;">' +
+          // ステップ1
+          '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e0e0e0;">' +
+            '<div style="width:28px;height:28px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:13px;flex-shrink:0;">1</div>' +
+            '<div style="flex:1;">' +
+              '<div style="font-weight:600;font-size:14px;margin-bottom:4px;">テンプレートをコピー</div>' +
+              '<p style="font-size:12px;color:#666;margin:0;">自分のGoogleドライブにコピーされます</p>' +
+            '</div>' +
+          '</div>' +
+          // ステップ2
+          '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e0e0e0;">' +
+            '<div style="width:28px;height:28px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:13px;flex-shrink:0;">2</div>' +
+            '<div style="flex:1;">' +
+              '<div style="font-weight:600;font-size:14px;margin-bottom:4px;">Apps Scriptをデプロイ</div>' +
+              '<p style="font-size:12px;color:#666;margin:0;">ウェブアプリとして公開します</p>' +
+            '</div>' +
+          '</div>' +
+          // ステップ3
+          '<div style="display:flex;align-items:flex-start;gap:12px;">' +
+            '<div style="width:28px;height:28px;background:linear-gradient(135deg, #10b981 0%, #059669 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:13px;flex-shrink:0;">✓</div>' +
+            '<div style="flex:1;">' +
+              '<div style="font-weight:600;font-size:14px;margin-bottom:4px;">デプロイURLでアクセス</div>' +
+              '<p style="font-size:12px;color:#666;margin:0;">あなた専用のツールが使えます</p>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        
+        '<a href="https://docs.google.com/spreadsheets/d/1mkXIArfMQvsHg0RLqcmicMHb6wU77eohkPDz2yHCKnI/copy" target="_blank" class="btn btn-primary btn-full" style="text-decoration:none;margin-bottom:12px;">' +
+          '📋 テンプレートをコピー' +
+        '</a>' +
+        '<a href="https://sordid-echinacea-374.notion.site/Threads-2fab3545dbc680d697abd1c773d8aae6" target="_blank" class="btn btn-secondary btn-full" style="text-decoration:none;">' +
+          '📖 セットアップガイド（画像付き）' +
+        '</a>' +
+      '</div>';
+    }
+    
+    // セットアップセクション（自分のコピーの場合）
+    var setupSection = '';
+    if (isOwnCopy && !hasAppId) {
+      setupSection = '<div class="card">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
+          '<div style="font-size:24px;">⚙️</div>' +
+          '<div style="font-weight:bold;font-size:16px;">次のステップ</div>' +
+        '</div>' +
+        '<p style="font-size:13px;color:#666;margin-bottom:12px;">デプロイが完了しました！Meta Developerの設定を行いましょう。</p>' +
+        '<button id="goToSetupBtn" class="btn btn-primary btn-full">Meta Developer設定へ進む</button>' +
+        '<a href="https://sordid-echinacea-374.notion.site/Threads-2fab3545dbc680d697abd1c773d8aae6" target="_blank" class="btn btn-secondary btn-full" style="text-decoration:none;margin-top:12px;">' +
+          '📖 設定ガイドを見る' +
+        '</a>' +
+      '</div>';
+    }
+    
+    // app_idがある場合（認証へ進む）
+    var continueSection = '';
+    if (hasAppId) {
+      continueSection = '<div class="card">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
+          '<div style="font-size:24px;">✅</div>' +
+          '<div style="font-weight:bold;font-size:16px;">セットアップを続ける</div>' +
+        '</div>' +
+        '<p style="font-size:13px;color:#666;margin-bottom:12px;">Meta Developerの設定が完了しています。次のステップへ進みましょう。</p>' +
+        '<button id="continueSetupBtn" class="btn btn-primary btn-full">Threads認証へ進む</button>' +
+      '</div>';
+    }
+    
+    return '<div class="welcome-screen">' +
+      '<div class="welcome-content">' +
+        
+        // ヘッダー
+        '<div style="text-align:center;margin-bottom:24px;">' +
+          '<div style="width:80px;height:80px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 8px 24px rgba(102,126,234,0.4);">' +
+            '<span style="font-size:40px;">📱</span>' +
+          '</div>' +
+          '<h1 style="font-size:24px;font-weight:700;margin-bottom:8px;">Threads投稿ツール</h1>' +
+          '<p style="color:#666;font-size:14px;">投稿・予約投稿・分析をかんたんに</p>' +
+        '</div>' +
+        
+        // アプリ内ブラウザ警告
+        inAppWarning +
+        
+        // 初めての方（テンプレートからのアクセス時のみ）
+        beginnerSection +
+        
+        // セットアップへ進む（自分のコピーの場合）
+        setupSection +
+        
+        // 認証へ進む（app_idがある場合）
+        continueSection +
+        
+        // プライバシー（テンプレートからのアクセス時のみ）
+        (!isOwnCopy && !hasAppId ? '<div style="margin-top:20px;padding:16px;background:#f0f9ff;border-radius:12px;">' +
+          '<div style="font-size:13px;color:#1e40af;">' +
+            '<strong>🔒 プライバシーについて</strong><br><br>' +
+            'あなたのデータは完全にあなた自身のGoogleアカウントで管理されます。開発者がアクセスすることはありません。' +
+          '</div>' +
+        '</div>' : '') +
+        
+      '</div>' +
+    '</div>';
+  };
+
+App.bindWelcomeEvents = function() {
+    var self = this;
+    
+    // アプリ内ブラウザ警告のイベント
+    this.bindInAppWarningEvents();
+    
+    // セットアップ続行ボタン（app_idあり）
+    var continueSetupBtn = document.getElementById('continueSetupBtn');
+    if (continueSetupBtn) {
+      continueSetupBtn.addEventListener('click', function() {
+        self.showScreen('settings');
+      });
+    }
+    
+    // Meta Developer設定へ進むボタン（自分のコピー、app_idなし）
+    var goToSetupBtn = document.getElementById('goToSetupBtn');
+    if (goToSetupBtn) {
+      goToSetupBtn.addEventListener('click', function() {
+        self.showScreen('settings');
+      });
+    }
+  };
+
+App.bindSheetCreatedEvents = function() {
+    var self = this;
+    
+    var copySheetIdBtn = document.getElementById('copySheetIdBtn');
+    var copySheetUrlBtn = document.getElementById('copySheetUrlBtn');
+    var nextToSetupBtn = document.getElementById('nextToSetupBtn');
+    
+    if (copySheetIdBtn) {
+      copySheetIdBtn.addEventListener('click', function() {
+        var input = document.getElementById('sheetIdDisplay');
+        navigator.clipboard.writeText(input.value).then(function() {
+          copySheetIdBtn.textContent = '✓';
+          setTimeout(function() { copySheetIdBtn.textContent = 'コピー'; }, 2000);
+        });
+      });
+    }
+    
+    if (copySheetUrlBtn) {
+      copySheetUrlBtn.addEventListener('click', function() {
+        var input = document.getElementById('sheetUrlDisplay');
+        navigator.clipboard.writeText(input.value).then(function() {
+          copySheetUrlBtn.textContent = '✓';
+          setTimeout(function() { copySheetUrlBtn.textContent = 'コピー'; }, 2000);
+        });
+      });
+    }
+    
+    if (nextToSetupBtn) {
+      nextToSetupBtn.addEventListener('click', function() {
+        self.showScreen('settings');
+      });
+    }
+  };
+
+App.saveChecklistState = function() {
+    var states = [];
+    document.querySelectorAll('.checklist-checkbox').forEach(function(cb) {
+      states.push(cb.checked);
+    });
+    localStorage.setItem('threads_setup_checklist', JSON.stringify(states));
+  };
+
+App.loadChecklistState = function() {
+    var saved = localStorage.getItem('threads_setup_checklist');
+    if (saved) {
+      try {
+        var states = JSON.parse(saved);
+        document.querySelectorAll('.checklist-checkbox').forEach(function(cb, index) {
+          if (states[index]) {
+            cb.checked = true;
+            var item = document.getElementById('step' + (index + 1));
+            if (item) item.classList.add('completed');
+          }
+        });
+      } catch (e) {}
+    }
+  };
+
+App.renderSetupAuthScreen = function() {
+    var settings = this.state.settings || {};
+    
+    // アプリ内ブラウザ警告
+    var inAppWarning = this.renderInAppWarning();
+    
+    // スマホ向け注意書き（常に表示）
+    var mobileNotice = '<div style="background:#e8f4fd;border:1px solid #bee5eb;border-radius:8px;padding:12px;margin-top:16px;font-size:12px;color:#0c5460;">' +
+      '<strong>📱 スマホの方へ</strong>' +
+      '<ul style="margin:8px 0 0 16px;padding:0;line-height:1.6;">' +
+        '<li>認証ボタンを<strong>長押し</strong>して「新しいタブで開く」を選択</li>' +
+        '<li>Threadsアプリが開いてしまう場合は下の「認証URLをコピー」を使用</li>' +
+        '<li><strong>PCでの認証</strong>を推奨します</li>' +
+      '</ul>' +
+    '</div>';
+    
+    return '<div class="setup-screen">' +
+      '<div class="setup-content">' +
+        '<h2 class="setup-title">Threads認証</h2>' +
+        '<p class="setup-desc">Meta Developerの設定が完了したら、Threadsアカウントを認証してください。</p>' +
+        
+        // アプリ内ブラウザ警告
+        inAppWarning +
+        
+        '<div class="card">' +
+          '<div class="card-title">ステップ 3: Threads認証</div>' +
+          '<p style="margin-bottom:16px;color:#666;">ボタンをクリックしてThreadsアカウントを認証します。</p>' +
+          '<button id="authBtn" class="btn btn-primary btn-full">Threadsで認証する</button>' +
+          '<button id="copyAuthUrlBtn" class="btn btn-secondary btn-full" style="margin-top:12px;">' +
+            '📋 認証URLをコピー' +
+          '</button>' +
+          mobileNotice +
+        '</div>' +
+        '<div class="setup-nav">' +
+          '<button id="backToSetupBtn" class="btn btn-secondary">← 戻る</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  };
+
+App.renderSetupScreen = function() {
+    var settings = this.state.settings || {};
+    var appUrl = settings.app_url || window.location.href;
+    
+    // アプリ内ブラウザ警告
+    var inAppWarning = this.renderInAppWarning();
+    
+    return '<div class="setup-screen">' +
+      '<div class="setup-content">' +
+        '<h2 class="setup-title">Meta Developer設定</h2>' +
+        '<p class="setup-desc">Threads APIを使用するために、Meta Developerでアプリを作成してください。</p>' +
+        
+        // アプリ内ブラウザ警告
+        inAppWarning +
+        
+        // ステップ1: Meta Developerでアプリ作成
+        '<div class="card">' +
+          '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">' +
+            '<div style="width:32px;height:32px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:14px;">1</div>' +
+            '<div style="font-weight:bold;font-size:16px;">Meta Developerでアプリ作成</div>' +
+          '</div>' +
+          '<div style="background:#f8f9fa;border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px;line-height:1.6;">' +
+            '<ol style="margin:0;padding-left:20px;">' +
+              '<li style="margin-bottom:8px;"><a href="https://developers.facebook.com/" target="_blank" style="color:#667eea;">Meta for Developers</a> にアクセス</li>' +
+              '<li style="margin-bottom:8px;">「マイアプリ」→「アプリを作成」</li>' +
+              '<li style="margin-bottom:8px;">ユースケース「その他」→ ビジネスポートフォリオ「紐付けない」</li>' +
+              '<li style="margin-bottom:8px;">アプリ名を入力して作成</li>' +
+              '<li>「Threads API」の「設定」をクリック</li>' +
+            '</ol>' +
+          '</div>' +
+          '<a href="https://sordid-echinacea-374.notion.site/Threads-2fab3545dbc680d697abd1c773d8aae6" target="_blank" class="btn btn-secondary btn-full" style="text-decoration:none;">' +
+            '📖 画像付きガイドを見る' +
+          '</a>' +
+        '</div>' +
+        
+        // ステップ2: リダイレクトURLを設定
+        '<div class="card">' +
+          '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">' +
+            '<div style="width:32px;height:32px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:14px;">2</div>' +
+            '<div style="font-weight:bold;font-size:16px;">リダイレクトURLを設定</div>' +
+          '</div>' +
+          '<p style="font-size:13px;color:#666;margin-bottom:12px;">Meta Developerの「リダイレクトコールバックURL」に以下のURLを追加してください：</p>' +
+          '<div style="background:#f0f0f0;border-radius:8px;padding:12px;margin-bottom:12px;word-break:break-all;font-size:12px;font-family:monospace;">' +
+            appUrl +
+          '</div>' +
+          '<button id="copyRedirectUrlBtn" class="btn btn-secondary btn-full">' +
+            '📋 リダイレクトURLをコピー' +
+          '</button>' +
+        '</div>' +
+        
+        // ステップ3: App IDとApp Secretを入力
+        '<div class="card">' +
+          '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">' +
+            '<div style="width:32px;height:32px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:14px;">3</div>' +
+            '<div style="font-weight:bold;font-size:16px;">認証情報を入力</div>' +
+          '</div>' +
+          '<p style="font-size:13px;color:#666;margin-bottom:12px;">Meta Developerの「アプリ設定」→「ベーシック」からApp IDとApp Secretをコピーしてください。</p>' +
+          '<div class="form-group">' +
+            '<label class="form-label">App ID</label>' +
+            '<input type="text" id="appIdInput" class="form-input" placeholder="例: 1234567890123456" value="' + (settings.app_id || '') + '">' +
+          '</div>' +
+          '<div class="form-group">' +
+            '<label class="form-label">App Secret</label>' +
+            '<input type="password" id="appSecretInput" class="form-input" placeholder="例: abc123def456..." value="' + (settings.app_secret || '') + '">' +
+          '</div>' +
+          '<button id="saveSetupBtn" class="btn btn-primary btn-full">保存して次へ</button>' +
+        '</div>' +
+        
+        '<div class="setup-nav" style="margin-top:16px;">' +
+          '<button id="backToWelcomeBtn" class="btn btn-secondary">← 戻る</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  };
+
+App.bindSetupEvents = function() {
+    var self = this;
+    
+    // アプリ内ブラウザ警告のイベント
+    this.bindInAppWarningEvents();
+    
+    // リダイレクトURLコピーボタン
+    var copyRedirectUrlBtn = document.getElementById('copyRedirectUrlBtn');
+    if (copyRedirectUrlBtn) {
+      copyRedirectUrlBtn.addEventListener('click', function() {
+        var appUrl = self.state.settings.app_url || window.location.href;
+        self.copyToClipboard(appUrl);
+        copyRedirectUrlBtn.textContent = '✅ コピーしました！';
+        setTimeout(function() {
+          copyRedirectUrlBtn.textContent = '📋 リダイレクトURLをコピー';
+        }, 2000);
+      });
+    }
+    
+    // 保存ボタン
+    var saveSetupBtn = document.getElementById('saveSetupBtn');
+    if (saveSetupBtn) {
+      saveSetupBtn.addEventListener('click', async function() {
+        var appId = document.getElementById('appIdInput').value.trim();
+        var appSecret = document.getElementById('appSecretInput').value.trim();
+        
+        if (!appId || !appSecret) {
+          self.showToast('App IDとApp Secretを入力してください', 'error');
+          return;
+        }
+        
+        try {
+          saveSetupBtn.disabled = true;
+          saveSetupBtn.textContent = '保存中...';
+          
+          await self.api('saveSettings', {
+            app_id: appId,
+            app_secret: appSecret
+          });
+          
+          self.state.settings.app_id = appId;
+          self.state.settings.app_secret = appSecret;
+          
+          self.showToast('設定を保存しました', 'success');
+          self.showScreen('settings');
+        } catch (e) {
+          self.showToast('保存に失敗しました: ' + e.message, 'error');
+          saveSetupBtn.disabled = false;
+          saveSetupBtn.textContent = '保存して次へ';
+        }
+      });
+    }
+    
+    // 戻るボタン
+    var backToWelcomeBtn = document.getElementById('backToWelcomeBtn');
+    if (backToWelcomeBtn) {
+      backToWelcomeBtn.addEventListener('click', function() {
+        self.showScreen('settings');
+      });
+    }
+  };
+
+App.bindSetupAuthEvents = function() {
+    var self = this;
+    
+    // アプリ内ブラウザ警告のイベント
+    this.bindInAppWarningEvents();
+    
+    // 認証URLコピーボタン
+    var copyAuthUrlBtn = document.getElementById('copyAuthUrlBtn');
+    if (copyAuthUrlBtn) {
+      copyAuthUrlBtn.addEventListener('click', async function() {
+        try {
+          copyAuthUrlBtn.disabled = true;
+          copyAuthUrlBtn.textContent = '取得中...';
+          var result = await self.api('getAuthUrl', {});
+          if (result.url) {
+            self.copyToClipboard(result.url);
+            copyAuthUrlBtn.textContent = '✅ コピーしました！';
+            setTimeout(function() {
+              copyAuthUrlBtn.textContent = '📋 認証URLをコピー';
+              copyAuthUrlBtn.disabled = false;
+            }, 3000);
+          }
+        } catch (e) {
+          self.showToast('認証URLの取得に失敗しました', 'error');
+          copyAuthUrlBtn.textContent = '📋 認証URLをコピー';
+          copyAuthUrlBtn.disabled = false;
+        }
+      });
+    }
+    
+    // 認証ボタン
+    var authBtn = document.getElementById('authBtn');
+    if (authBtn) {
+      authBtn.addEventListener('click', async function() {
+        try {
+          authBtn.disabled = true;
+          authBtn.textContent = '取得中...';
+          var result = await self.api('getAuthUrl', {});
+          if (result.url) {
+            window.open(result.url, '_blank', 'width=600,height=700');
+          }
+        } catch (e) {
+          self.showToast('認証URLの取得に失敗しました', 'error');
+          authBtn.textContent = 'Threadsで認証する';
+          authBtn.disabled = false;
+        }
+      });
+    }
+    
+    // 戻るボタン
+    var backToSetupBtn = document.getElementById('backToSetupBtn');
+    if (backToSetupBtn) {
+      backToSetupBtn.addEventListener('click', function() {
+        self.showScreen('settings');
+      });
+    }
+  };
+
+App.renderMainLayout = function(activeTab) {
+  var user = this.state.user || {};
+  var sheetId = this.state.sheetId || localStorage.getItem('threads_tool_sheet_id') || '';
+  var sheetUrl = sheetId ? 'https://docs.google.com/spreadsheets/d/' + sheetId + '/edit' : '';
+  var content = '';
+  var accounts = this.state.accounts || [];
+  var activeAccount = this.state.activeAccount;
+
+    // ★ デバッグログを追加 ★
+  console.log('=== renderMainLayout ===');
+  console.log('accounts:', accounts);
+  console.log('accounts.length:', accounts.length);
+  console.log('activeAccount:', activeAccount);
+    
+  switch (activeTab) {
+    case 'compose':
+      content = this.renderComposeContent();
+      break;
+    case 'schedule':
+      content = this.renderScheduleContent();
+      break;
+    case 'analytics':
+      content = this.renderAnalyticsContent();
+      break;
+    case 'history':
+      content = this.renderHistoryContent();
+      break;
+    case 'settings':
+      content = this.renderSettingsContent();
+      break;
+  }
+  
+  // 予約・履歴ページにはシート情報バーを表示
+  var sheetInfoBar = '';
+  if ((activeTab === 'schedule' || activeTab === 'history') && sheetId) {
+    sheetInfoBar = '<div style="background:#f8f9fa;border-bottom:1px solid #e0e0e0;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
+      '<div style="font-size:11px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">' +
+        '📊 ' + sheetId.substring(0, 20) + '...' +
+      '</div>' +
+      '<a href="' + sheetUrl + '" target="_blank" style="background:#4285f4;color:white;padding:6px 12px;border-radius:6px;font-size:12px;text-decoration:none;white-space:nowrap;">' +
+        '📂 シートを開く' +
+      '</a>' +
+    '</div>';
+  }
+
+ // ヘッダーのユーザー表示部分
+  var headerUserHtml = '';
+  if (accounts.length > 1) {
+    // 複数アカウントがある場合は切り替えUIを表示
+    console.log('★ 複数アカウント検出、切り替えUIを表示');
+    headerUserHtml = this.renderAccountSwitcher();
+    console.log('headerUserHtml:', headerUserHtml);
+  } else {
+    // 単一アカウントの場合は従来の表示
+    console.log('★ 単一アカウント、従来の表示');
+    headerUserHtml = '<div class="header-user">' +
+      (user.profilePicUrl ? '<img src="' + user.profilePicUrl + '" class="header-avatar" alt="">' : '') +
+      '<span class="header-username">@' + (user.username || 'ユーザー') + '</span>' +
+    '</div>';
+  }
+    
+    return '<div class="header">' +
+    '<div class="header-title"><img src="https://files.catbox.moe/6wjxg6.webp" style="width:28px;height:28px;border-radius:6px;margin-right:8px;vertical-align:middle;">Threads投稿ツール</div>' +
+    headerUserHtml +
+  '</div>' +
+  sheetInfoBar +
+  '<div class="content" id="content">' + content + '</div>' +
+  '<nav class="nav">' +
+    '<div class="nav-inner">' +
+      '<button class="nav-item' + (activeTab === 'compose' ? ' active' : '') + '" data-screen="compose">' +
+        '<span class="nav-icon">✏️</span>' +
+        '<span>投稿</span>' +
+      '</button>' +
+      '<button class="nav-item' + (activeTab === 'schedule' ? ' active' : '') + '" data-screen="schedule">' +
+        '<span class="nav-icon">📅</span>' +
+        '<span>予約</span>' +
+      '</button>' +
+      '<button class="nav-item' + (activeTab === 'analytics' ? ' active' : '') + '" data-screen="analytics">' +
+        '<span class="nav-icon">📊</span>' +
+        '<span>分析</span>' +
+      '</button>' +
+      '<button class="nav-item' + (activeTab === 'history' ? ' active' : '') + '" data-screen="history">' +
+        '<span class="nav-icon">📋</span>' +
+        '<span>履歴</span>' +
+      '</button>' +
+      '<button class="nav-item' + (activeTab === 'settings' ? ' active' : '') + '" data-screen="settings">' +
+        '<span class="nav-icon">⚙️</span>' +
+        '<span>設定</span>' +
+      '</button>' +
+    '</div>' +
+  '</nav>';
+};
+
+App.renderAccountSwitcher = function() {
+    var self = this;
+    var accounts = this.state.accounts || [];
+    var activeAccount = this.state.activeAccount;
+    
+    if (accounts.length <= 1) {
+      // アカウントが1つ以下の場合は表示しない
+      return '';
+    }
+    
+    var currentUsername = activeAccount ? activeAccount.username : '選択してください';
+    var currentPic = activeAccount && activeAccount.profilePicUrl ? activeAccount.profilePicUrl : '';
+    
+    var optionsHtml = '';
+    accounts.forEach(function(acc) {
+      var isActive = activeAccount && acc.accountId === activeAccount.accountId;
+      optionsHtml += '<div class="account-option' + (isActive ? ' active' : '') + '" data-account-id="' + acc.accountId + '">' +
+        (acc.profilePicUrl ? '<img src="' + acc.profilePicUrl + '" class="account-option-pic">' : '<div class="account-option-pic-placeholder"></div>') +
+        '<span class="account-option-name">@' + (acc.username || acc.accountId) + '</span>' +
+        (isActive ? '<span class="account-option-check">✓</span>' : '') +
+      '</div>';
+    });
+    
+    return '<div class="account-switcher">' +
+  '<button class="account-switcher-btn" id="accountSwitcherBtn">' +
+    (currentPic ? '<img src="' + currentPic + '" class="switcher-pic">' : '') +
+    '<span class="switcher-name">@' + currentUsername + '</span>' +
+    '<span class="switcher-arrow">▼</span>' +
+        '</button>' +
+        '<div class="account-dropdown" id="accountDropdown">' +
+          optionsHtml +
+        '</div>' +
+      '</div>';
+      };
+
+App.bindAccountSwitcherEvents = function() {
+    var self = this;
+    
+    var btn = document.getElementById('accountSwitcherBtn');
+    var dropdown = document.getElementById('accountDropdown');
+    
+    if (btn && dropdown) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('show');
+      });
+      
+      // ドロップダウン外クリックで閉じる
+      document.addEventListener('click', function() {
+        dropdown.classList.remove('show');
+      });
+      
+      // アカウント選択
+      dropdown.querySelectorAll('.account-option:not(.add-account)').forEach(function(option) {
+        option.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var accountId = this.getAttribute('data-account-id');
+          dropdown.classList.remove('show');
+          self.switchAccount(accountId);
+        });
+      });
+    }
+  };
+
+App.renderAllAccountsToggle = function() {
+    var checked = this.state.showAllAccounts ? 'checked' : '';
+    
+    return '<div class="all-accounts-toggle">' +
+      '<label class="toggle-label">' +
+        '<input type="checkbox" id="showAllAccountsToggle" ' + checked + '>' +
+        '<span class="toggle-text">全アカウントの投稿を表示</span>' +
+      '</label>' +
+    '</div>';
+  };
+
+App.bindAllAccountsToggleEvents = function(reloadFunction) {
+    var self = this;
+    var toggle = document.getElementById('showAllAccountsToggle');
+    
+    if (toggle) {
+      toggle.addEventListener('change', function() {
+        self.state.showAllAccounts = this.checked;
+        reloadFunction.call(self);
+      });
+    }
+  };
+
+App.showImportAccountModal = function() {
+  var self = App;
+  
+  var overlay = document.createElement('div');
+  overlay.id = 'importAccountModal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:1000;padding:20px;';
+  
+  overlay.innerHTML = 
+    '<div style="background:white;border-radius:16px;padding:24px;max-width:450px;width:100%;max-height:90vh;overflow-y:auto;">' +
+      '<div style="font-size:20px;font-weight:bold;margin-bottom:16px;">別スプシからインポート</div>' +
+      
+      '<div style="background:#e8f4fd;border-radius:8px;padding:12px;margin-bottom:16px;">' +
+        '<div style="font-size:14px;color:#1e40af;line-height:1.6;">' +
+          '💡 <strong>この機能の使い方</strong><br>' +
+          '別アカウントで認証済みのスプレッドシートから<br>アカウント情報をコピーします。' +
+        '</div>' +
+      '</div>' +
+      
+      '<div style="background:#f8f9fa;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;line-height:1.6;">' +
+        '<strong>事前準備:</strong><br>' +
+        '1. テンプレートを再度コピー<br>' +
+        '2. 新しいスプシをデプロイ<br>' +
+        '3. Meta Developerに新URLを追加<br>' +
+        '4. 別アカウントで認証を完了<br>' +
+        '5. ここに戻ってインポート' +
+      '</div>' +
+      
+      '<div style="margin-bottom:16px;">' +
+        '<label style="font-size:14px;font-weight:600;display:block;margin-bottom:8px;">スプレッドシートID</label>' +
+        '<input type="text" id="importSheetId" class="input" placeholder="例: 1AbCdEfG..." style="font-size:14px;">' +
+        '<div style="font-size:12px;color:#666;margin-top:4px;">※ スプシURLの /d/ と /edit の間の文字列</div>' +
+      '</div>' +
+      
+      '<div style="border-top:1px solid #eee;padding-top:16px;display:flex;gap:8px;">' +
+        '<button id="cancelImportBtn" class="btn btn-secondary" style="flex:1;">キャンセル</button>' +
+        '<button id="executeImportBtn" class="btn btn-primary" style="flex:1;">インポート</button>' +
+      '</div>' +
+    '</div>';
+  
+  document.body.appendChild(overlay);
+  
+  // キャンセルボタン
+  document.getElementById('cancelImportBtn').addEventListener('click', function() {
+    document.body.removeChild(overlay);
+  });
+  
+  // 背景クリックで閉じる
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      document.body.removeChild(overlay);
+    }
+  });
+  
+  // インポート実行
+  document.getElementById('executeImportBtn').addEventListener('click', function() {
+    var sourceSheetId = document.getElementById('importSheetId').value.trim();
+    
+    if (!sourceSheetId) {
+      self.showToast('スプレッドシートIDを入力してください', 'error');
+      return;
+    }
+    
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'インポート中...';
+    
+    self.api('importAccountFromSheet', { sourceSheetId: sourceSheetId })
+      .then(function(result) {
+        document.body.removeChild(overlay);
+        self.showToast(result.message || 'インポートしました', 'success');
+        self.loadAccounts().then(function() {
+          self.showScreen('settings');
+        });
+      })
+      .catch(function(error) {
+        btn.disabled = false;
+        btn.textContent = 'インポート';
+        self.showToast(error.message || 'インポートに失敗しました', 'error');
+      });
+    });
+  };
+
+App.openEditModal = function(postId) {
+  var self = this;
+  var post = this.state.posts.find(function(p) { return p.id === postId; });
+  
+  if (!post) {
+    this.showToast('投稿が見つかりません', 'error');
+    return;
+  }
+  
+  var scheduledLocal = '';
+  if (post.scheduledTime) {
+    var d = new Date(post.scheduledTime);
+    scheduledLocal = d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0') + 'T' +
+      String(d.getHours()).padStart(2, '0') + ':' +
+      String(d.getMinutes()).padStart(2, '0');
+  }
+  
+  var modalHtml = '<div id="editModal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px;">' +
+    '<div style="background:white;border-radius:16px;padding:24px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+        '<h3 style="margin:0;font-size:18px;">予約投稿を編集</h3>' +
+        '<button onclick="App.closeEditModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666;">✕</button>' +
+      '</div>' +
+      
+      '<div style="margin-bottom:16px;">' +
+        '<label style="font-size:13px;color:#666;display:block;margin-bottom:4px;">投稿内容</label>' +
+        '<textarea id="editText" class="textarea" style="min-height:120px;">' + this.escapeHtmlForTextarea(post.text || '') + '</textarea>' +
+        '<div style="text-align:right;font-size:12px;color:#666;"><span id="editCharCount">' + (post.text || '').length + '</span> / 500</div>' +
+      '</div>' +
+      
+      '<div style="margin-bottom:16px;">' +
+        '<label style="font-size:13px;color:#666;display:block;margin-bottom:4px;">メディアURL（任意）</label>' +
+        '<input type="text" id="editMediaUrl" class="input" value="' + (post.mediaUrl || '') + '" placeholder="https://...">' +
+        '<div style="display:flex;gap:8px;margin-top:8px;">' +
+          '<label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-size:12px;">' +
+            '<input type="radio" name="editMediaType" value="" ' + (!post.mediaType ? 'checked' : '') + '> なし' +
+          '</label>' +
+          '<label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-size:12px;">' +
+            '<input type="radio" name="editMediaType" value="IMAGE" ' + (post.mediaType === 'IMAGE' ? 'checked' : '') + '> 画像' +
+          '</label>' +
+          '<label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-size:12px;">' +
+            '<input type="radio" name="editMediaType" value="VIDEO" ' + (post.mediaType === 'VIDEO' ? 'checked' : '') + '> 動画' +
+          '</label>' +
+        '</div>' +
+      '</div>' +
+      
+      '<div style="margin-bottom:16px;">' +
+        '<label style="font-size:13px;color:#666;display:block;margin-bottom:4px;">投稿日時</label>' +
+        '<input type="datetime-local" id="editScheduledTime" class="input" value="' + scheduledLocal + '">' +
+      '</div>' +
+      
+      '<input type="hidden" id="editPostId" value="' + post.id + '">' +
+      
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="App.closeEditModal()" class="btn btn-secondary" style="flex:1;">キャンセル</button>' +
+        '<button onclick="App.saveEditedPost()" class="btn btn-primary" style="flex:1;">保存する</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  // 文字数カウント
+  var editText = document.getElementById('editText');
+  var editCharCount = document.getElementById('editCharCount');
+  if (editText && editCharCount) {
+    editText.addEventListener('input', function() {
+      editCharCount.textContent = editText.value.length;
+    });
+  }
+};
+
+App.closeEditModal = function() {
+  var modal = document.getElementById('editModal');
+  if (modal) modal.remove();
+  };
+
+App.saveEditedPost = async function() {
+  var self = this;
+  
+  var postId = document.getElementById('editPostId').value;
+  var text = document.getElementById('editText').value.trim();
+      text = text.replace(/<br\s*\/?>/gi, '\n');
+  var mediaUrl = document.getElementById('editMediaUrl').value.trim();
+  var mediaTypeEl = document.querySelector('input[name="editMediaType"]:checked');
+  var mediaType = mediaTypeEl ? mediaTypeEl.value : '';
+  var scheduledTime = document.getElementById('editScheduledTime').value;
+  
+  if (!text && !mediaUrl) {
+    this.showToast('投稿内容またはメディアURLを入力してください', 'error');
+    return;
+  }
+  
+  if (!scheduledTime) {
+    this.showToast('投稿日時を選択してください', 'error');
+    return;
+  }
+  
+  try {
+    await this.api('updateScheduledPost', {
+      postId: postId,
+      text: text,
+      mediaUrl: mediaUrl || null,
+      mediaType: mediaUrl ? mediaType : null,
+      scheduledTime: new Date(scheduledTime).toISOString()
+    });
+    
+    this.closeEditModal();
+    this.showToast('保存しました', 'success');
+    this.fetchScheduledPosts();
+  } catch (error) {
+    this.showToast('保存エラー: ' + error.message, 'error');
+  }
+  };
+
+App.retryPost = async function(postId) {
+    if (!confirm('この投稿を再試行しますか？')) return;
+  
+    this.showToast('再試行中...', 'info');
+  
+    try {
+    var result = await this.api('retryScheduledPost', { postId: postId });
+    this.showToast('投稿しました！', 'success');
+    this.fetchScheduledPosts();
+    } catch (error) {
+    this.showToast('再試行エラー: ' + error.message, 'error');
+    this.fetchScheduledPosts();
+    }
+  };
+
+App.deletePost = async function(postId) {
+    if (!confirm('この予約を削除しますか？')) return;
+    
+    try {
+      await this.api('deletePost', { postId: postId });
+      this.showToast('削除しました', 'success');
+      this.loadScheduledPosts();
+    } catch (error) {
+      this.showToast('削除エラー: ' + error.message, 'error');
+    }
+  };
+
+App.escapeHtml = function(text) {
+    if (!text) return '';
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+      .replace(/\n/g, '<br>');
+};
+
+App.escapeHtmlForTextarea = function(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+App.showToast = function(message, type) {
+    var existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+
+    var toast = document.createElement('div');
+    toast.className = 'toast' + (type ? ' ' + type : '');
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(function() {
+      toast.remove();
+    }, 3000);
+};
+
+</script>

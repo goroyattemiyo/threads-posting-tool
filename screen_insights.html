@@ -1,0 +1,210 @@
+<script>
+// insights screen templates and logic
+
+
+App.renderAnalyticsContent = function() {
+    var user = this.state.user || {};
+    
+    return '<div class="analytics-area">' +
+      '<div class="card">' +
+        '<div class="card-title">アカウント</div>' +
+        '<div style="display:flex;align-items:center;gap:12px;">' +
+          (user.profilePicUrl ? '<img src="' + user.profilePicUrl + '" style="width:50px;height:50px;border-radius:50%;object-fit:cover;">' : '<div style="width:50px;height:50px;border-radius:50%;background:#eee;"></div>') +
+          '<div>' +
+            '<div style="font-weight:600;">@' + (user.username || '---') + '</div>' +
+            '<div style="color:#666;font-size:14px;">Threads</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      
+      '<div class="card">' +
+        '<div class="card-title">過去7日間のサマリー</div>' +
+        '<div id="userInsightsContainer">' +
+          '<div class="loading">' +
+            '<div class="loading-spinner"></div>' +
+            '<div>読み込み中...</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      
+      '<div class="card">' +
+        '<div class="card-title">最近の投稿パフォーマンス</div>' +
+        '<div id="postInsightsContainer">' +
+          '<div class="loading">' +
+            '<div class="loading-spinner"></div>' +
+            '<div>読み込み中...</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      
+       '<div class="card">' +
+        '<div class="card-title">ビュー推移</div>' +
+        '<div id="insightsChartContainer">' +
+          '<div class="loading"><div class="loading-spinner"></div><div>読み込み中...</div></div>' +
+        '</div>' +
+      '</div>' +
+
+      '<button id="refreshAnalyticsBtn" class="btn btn-secondary btn-full">データを更新</button>' +
+    '</div>';
+  };
+
+App.fetchInsights = function() {
+    var self = this;
+    
+    this.api({ action: 'getInsights' })
+      .then(function(result) {
+        console.log('Insights result:', result);
+        self.renderUserInsights(result.user);
+        self.renderPostInsights(result.recentPosts);
+      })
+      .catch(function(error) {
+        console.error('Insights error:', error);
+        document.getElementById('userInsightsContainer').innerHTML = 
+          '<div style="color:#666;text-align:center;padding:20px;">データを取得できませんでした</div>';
+        document.getElementById('postInsightsContainer').innerHTML = '';
+      });
+  };
+
+App.renderUserInsights = function(data) {
+    var container = document.getElementById('userInsightsContainer');
+    if (!container) return;
+    
+    if (!data) {
+      container.innerHTML = '<div style="color:#666;text-align:center;padding:20px;">データがありません</div>';
+      return;
+    }
+    
+    container.innerHTML = 
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">' +
+        '<div style="text-align:center;padding:16px;background:#f8f9fa;border-radius:12px;">' +
+          '<div style="font-size:28px;font-weight:bold;color:#000;">' + (data.views || 0).toLocaleString() + '</div>' +
+          '<div style="font-size:14px;color:#666;">ビュー</div>' +
+        '</div>' +
+        '<div style="text-align:center;padding:16px;background:#f8f9fa;border-radius:12px;">' +
+          '<div style="font-size:28px;font-weight:bold;color:#000;">' + (data.followersCount || 0).toLocaleString() + '</div>' +
+          '<div style="font-size:14px;color:#666;">フォロワー</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="text-align:center;margin-top:12px;font-size:12px;color:#999;">' +
+        '期間: ' + (data.period ? new Date(data.period.since).toLocaleDateString() + ' 〜 ' + new Date(data.period.until).toLocaleDateString() : '---') +
+      '</div>';
+  };
+
+App.renderPostInsights = function(posts) {
+  var container = document.getElementById('postInsightsContainer');
+  if (!container) return;
+  
+  if (!posts || posts.length === 0) {
+    container.innerHTML = '<div style="color:#666;text-align:center;padding:20px;">投稿がありません</div>';
+    return;
+  }
+  
+  var html = '<div style="display:flex;flex-direction:column;gap:12px;max-height:400px;overflow-y:auto;">';
+  
+  posts.slice(0, 20).forEach(function(post) {
+    // postedAt または date を使用
+    var dateStr = post.postedAt || post.date || '';
+    var date = dateStr ? new Date(dateStr).toLocaleDateString() : '---';
+    var text = post.text || post.postId || '投稿';
+    var displayText = text.length > 50 ? text.substring(0, 50) + '...' : text;
+    
+    html += 
+      '<div style="padding:12px;background:#f8f9fa;border-radius:8px;">' +
+        '<div style="font-size:13px;color:#333;margin-bottom:8px;">' + displayText + '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<div style="font-size:12px;color:#999;">' + date + '</div>' +
+          '<div style="display:flex;gap:12px;font-size:12px;color:#666;">' +
+            '<span>👁 ' + (post.views || 0) + '</span>' +
+            '<span>❤️ ' + (post.likes || 0) + '</span>' +
+            '<span>💬 ' + (post.replies || 0) + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  });
+  
+  html += '</div>';
+  container.innerHTML = html;
+};
+
+App.loadAnalytics = async function() {
+  var self = this;
+  
+  // ナビゲーション
+  document.querySelectorAll('.nav-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      var screen = this.getAttribute('data-screen');
+      self.showScreen(screen);
+    });
+  });
+  
+  // アカウント切り替えイベント
+  this.bindAccountSwitcherEvents();
+  
+  var refreshBtn = document.getElementById('refreshAnalyticsBtn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function() {
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = '更新中...';
+      self.loadAnalyticsData().then(function() {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = 'データを更新';
+      });
+    });
+  }
+  
+  await this.loadAnalyticsData();
+};
+
+App.loadAnalyticsData = async function() {
+  var self = this;
+  var userContainer = document.getElementById('userInsightsContainer');
+  var postContainer = document.getElementById('postInsightsContainer');
+  
+  if (!userContainer || !postContainer) {
+    console.error('コンテナが見つかりません');
+    return;
+  }
+  
+  userContainer.innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>読み込み中...</div></div>';
+  postContainer.innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>読み込み中...</div></div>';
+  
+  try {
+    var insights = await this.api('getInsights', {});
+    console.log('Insights result:', insights);
+    
+    // ユーザーインサイト表示
+    if (insights && insights.user) {
+      this.renderUserInsights(insights.user);
+    } else {
+      userContainer.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">ユーザーデータがありません</div>';
+    }
+    
+    // 投稿インサイト表示
+      if (insights && insights.recentPosts && insights.recentPosts.length > 0) {
+        this.renderPostInsights(insights.recentPosts);
+      } else if (insights && insights.analyticsData && insights.analyticsData.length > 0) {
+        
+        // recentPostsが空の場合はanalyticsDataを使用
+        this.renderPostInsights(insights.analyticsData);
+      } else {
+        postContainer.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">投稿データがありません</div>';
+      }
+
+    // ★Phase3: グラフ描画
+    var chartContainer = document.getElementById('insightsChartContainer');
+    if (chartContainer && insights) {
+      var chartSource = (insights.analyticsData && insights.analyticsData.length > 0) 
+        ? insights.analyticsData 
+        : insights.recentPosts;
+      chartContainer.innerHTML = Phase3.renderInsightsChart(chartSource || []);
+    }
+
+    
+  } catch (error) {
+    console.error('Analytics error:', error);
+    userContainer.innerHTML = '<div style="text-align:center;color:#e74c3c;padding:20px;">データの取得に失敗しました</div>';
+    postContainer.innerHTML = '';
+  }
+};
+
+</script>

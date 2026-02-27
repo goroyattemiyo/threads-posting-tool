@@ -1,0 +1,1864 @@
+﻿<script>
+// compose screen templates and logic
+
+
+App.renderComposeContent = function() {
+  return '<div class="compose-area">' +
+    
+    // 投稿モード選択
+    '<div class="card">' +
+      '<div class="card-title">投稿タイプ</div>' +
+      '<div class="compose-mode-tabs">' +
+        '<button type="button" class="compose-mode-tab active" data-mode="single">単独投稿</button>' +
+        '<button type="button" class="compose-mode-tab" data-mode="tree">ツリー投稿</button>' +
+      '</div>' +
+    '</div>' +
+    
+    // 単独投稿エリア
+    '<div id="singlePostArea">' +
+      Phase3.renderTemplateButton() +
+      this.renderSinglePostForm(0) +
+    '</div>' +
+    
+    // ツリー投稿エリア
+    '<div id="treePostArea" style="display:none;">' +
+      '<div id="treePostList">' +
+        this.renderTreePostItem(0, true) +
+      '</div>' +
+      '<div class="card">' +
+        '<button type="button" id="addTreePostBtn" class="btn btn-secondary btn-full">' +
+          '<span style="font-size:18px;">＋</span> 投稿を追加（最大10件）' +
+        '</button>' +
+        '<p id="treePostCount" style="text-align:center;font-size:12px;color:#666;margin-top:8px;">1 / 10 件</p>' +
+      '</div>' +
+    '</div>' +
+    
+    // 投稿方法（今すぐ/予約）
+    '<div class="card">' +
+      '<div class="card-title">投稿方法</div>' +
+      '<div class="post-options">' +
+        '<div class="post-option selected" data-type="now">' +
+          '<span class="post-option-icon">📤</span>' +
+          '<span class="post-option-label">今すぐ投稿</span>' +
+        '</div>' +
+        '<div class="post-option" data-type="schedule">' +
+          '<span class="post-option-icon">⏰</span>' +
+          '<span class="post-option-label">予約投稿</span>' +
+        '</div>' +
+      '</div>' +
+      '<div id="scheduleInput" class="datetime-input" style="display:none;">' +
+        '<label class="datetime-label">投稿日時</label>' +
+        '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
+          '<button type="button" class="quick-time-btn" data-hours="1">1時間後</button>' +
+          '<button type="button" class="quick-time-btn" data-hours="3">3時間後</button>' +
+          '<button type="button" class="quick-time-btn" data-hours="6">6時間後</button>' +
+          '<button type="button" class="quick-time-btn" data-hours="24">明日</button>' +
+        '</div>' +
+        '<input type="datetime-local" id="scheduleTime" class="input">' +
+        // ★Phase2: よく使う時刻プリセット
+        Phase2.renderPresetChips() +
+      '</div>' +
+    '</div>' +
+    
+    // ★Phase1: 投稿ボタンを sticky ラッパーで囲む
+    '<div class="sticky-submit-wrapper">' +
+      '<button id="submitBtn" class="btn btn-primary btn-full">投稿する</button>' +
+    '</div>' +
+    
+    // ★Phase2: 直近の投稿プレビュー
+    Phase2.renderRecentPosts() +
+    
+  '</div>';
+};
+
+App.renderSinglePostForm = function(index) {
+    return '<div class="card">' +
+      '<textarea id="postText" class="textarea" placeholder="いまどうしてる？" maxlength="500"></textarea>' +
+      '<div class="char-count"><span id="charCount">0</span> / 500</div>' +
+    '</div>' +
+    
+    '<div class="card">' +
+      '<div class="card-title">画像・動画（任意）</div>' +
+      this.renderMediaUploadSection('single') +
+    '</div>';
+  };
+
+App.renderTreePostItem = function(index, isFirst) {
+    var deleteBtn = isFirst ? '' : 
+      '<button type="button" class="tree-post-delete" data-index="' + index + '">✕</button>';
+    
+    return '<div class="card tree-post-item" data-index="' + index + '">' +
+      '<div class="tree-post-header">' +
+        '<span class="tree-post-number">' + (isFirst ? '親投稿' : '返信 ' + index) + '</span>' +
+        deleteBtn +
+      '</div>' +
+      '<textarea class="textarea tree-post-text" placeholder="' + (isFirst ? '最初の投稿内容...' : '返信内容...') + '" maxlength="500" data-index="' + index + '"></textarea>' +
+      '<div class="char-count"><span class="tree-char-count" data-index="' + index + '">0</span> / 500</div>' +
+      
+      '<div class="tree-media-section">' +
+        '<div class="tree-media-toggle" data-index="' + index + '">' +
+          '<span>📎 メディアを追加</span>' +
+        '</div>' +
+        '<div class="tree-media-content" data-index="' + index + '" style="display:none;">' +
+          this.renderMediaUploadSection('tree-' + index) +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  };
+
+App.renderMediaUploadSection = function(prefix) {
+  return '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
+    '<button type="button" class="btn btn-secondary media-select-btn" data-prefix="' + prefix + '" data-type="image" style="flex:1;">📷 画像</button>' +
+    '<button type="button" class="btn btn-secondary media-select-btn" data-prefix="' + prefix + '" data-type="video" style="flex:1;">🎬 動画</button>' +
+    '<button type="button" class="btn btn-secondary camera-btn" data-prefix="' + prefix + '" style="flex:0 0 auto;">📸</button>' +
+  '</div>' +
+  
+  // フォルダから選択用（captureなし）
+  '<input type="file" class="media-file-input" data-prefix="' + prefix + '" data-type="image" accept="image/*" style="display:none;">' +
+  '<input type="file" class="media-file-input" data-prefix="' + prefix + '" data-type="video" accept="video/*" style="display:none;">' +
+  // カメラ直接起動用（capture付き）
+  '<input type="file" class="camera-file-input" data-prefix="' + prefix + '" accept="image/*" capture="environment" style="display:none;">' +
+  
+  '<div class="media-url-section" data-prefix="' + prefix + '" style="display:none;margin-bottom:12px;">' +
+    '<input type="text" class="input media-url-input" data-prefix="' + prefix + '" placeholder="画像/動画URL（https://...）" style="margin-bottom:8px;">' +
+    '<div style="display:flex;gap:8px;">' +
+      '<label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-size:12px;">' +
+        '<input type="radio" class="media-type-radio" name="mediaType-' + prefix + '" value="IMAGE" checked> 画像' +
+      '</label>' +
+      '<label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-size:12px;">' +
+        '<input type="radio" class="media-type-radio" name="mediaType-' + prefix + '" value="VIDEO"> 動画' +
+      '</label>' +
+    '</div>' +
+  '</div>' +
+  
+  '<div class="upload-progress" data-prefix="' + prefix + '" style="display:none;margin-bottom:12px;">' +
+    '<div style="background:#e0e0e0;border-radius:4px;height:6px;overflow:hidden;">' +
+      '<div class="progress-bar" data-prefix="' + prefix + '" style="background:var(--accent-color);height:100%;width:0%;transition:width 0.3s;"></div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#666;margin-top:4px;text-align:center;">アップロード中...</div>' +
+  '</div>' +
+  
+  '<div class="media-preview" data-prefix="' + prefix + '" style="display:none;position:relative;margin-bottom:12px;">' +
+    '<button type="button" class="media-remove-btn" data-prefix="' + prefix + '" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.7);color:white;border:none;font-size:14px;cursor:pointer;z-index:10;">✕</button>' +
+    '<div class="media-type-label" data-prefix="' + prefix + '" style="position:absolute;top:8px;left:8px;padding:3px 6px;background:rgba(0,0,0,0.7);color:white;border-radius:4px;font-size:10px;"></div>' +
+    '<img class="preview-image" data-prefix="' + prefix + '" style="max-width:100%;border-radius:8px;display:none;">' +
+    '<video class="preview-video" data-prefix="' + prefix + '" style="max-width:100%;border-radius:8px;display:none;" controls></video>' +
+  '</div>' +
+  
+  '<input type="hidden" class="final-media-url" data-prefix="' + prefix + '" value="">' +
+  '<input type="hidden" class="final-media-type" data-prefix="' + prefix + '" value="">' +
+  
+  '<p style="font-size:10px;color:#888;">※ 画像8MB以下、動画100MB以下｜📋 PC: Ctrl+V で画像ペースト可能</p>';
+};
+
+App.bindComposeEvents = function() {
+    var self = this;
+    var treePostCount = 1;
+    var maxTreePosts = 10;
+
+    // アカウント切り替えイベント
+    this.bindAccountSwitcherEvents();
+    
+    // ナビゲーション
+    document.querySelectorAll('.nav-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var screen = this.getAttribute('data-screen');
+        self.showScreen(screen);
+      });
+    });
+    
+    // 投稿モード切り替え
+    var modeTabs = document.querySelectorAll('.compose-mode-tab');
+    var singlePostArea = document.getElementById('singlePostArea');
+    var treePostArea = document.getElementById('treePostArea');
+    
+    modeTabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        modeTabs.forEach(function(t) { t.classList.remove('active'); });
+        this.classList.add('active');
+        
+        var mode = this.getAttribute('data-mode');
+        if (mode === 'tree') {
+          singlePostArea.style.display = 'none';
+          treePostArea.style.display = 'block';
+        } else {
+          singlePostArea.style.display = 'block';
+          treePostArea.style.display = 'none';
+        }
+      });
+    });
+    
+    // 単独投稿の文字数カウント
+    var postText = document.getElementById('postText');
+    var charCount = document.getElementById('charCount');
+    if (postText && charCount) {
+      postText.addEventListener('input', function() {
+        var count = postText.value.length;
+        charCount.textContent = count;
+        charCount.parentElement.className = 'char-count' + 
+          (count > 450 ? ' warning' : '') + 
+          (count >= 500 ? ' error' : '');
+      });
+    }
+    
+    // ツリー投稿追加ボタン
+    var addTreePostBtn = document.getElementById('addTreePostBtn');
+    var treePostList = document.getElementById('treePostList');
+    var treePostCountEl = document.getElementById('treePostCount');
+    
+    if (addTreePostBtn) {
+      addTreePostBtn.addEventListener('click', function() {
+        if (treePostCount >= maxTreePosts) {
+          self.showToast('ツリー投稿は最大' + maxTreePosts + '件までです', 'error');
+          return;
+        }
+        
+        treePostCount++;
+        var newItem = document.createElement('div');
+        newItem.innerHTML = self.renderTreePostItem(treePostCount - 1, false);
+        treePostList.appendChild(newItem.firstChild);
+        
+        treePostCountEl.textContent = treePostCount + ' / ' + maxTreePosts + ' 件';
+        
+        // 新しいアイテムのイベントをバインド
+        self.bindTreePostItemEvents(treePostCount - 1);
+        self.bindMediaEvents('tree-' + (treePostCount - 1));
+        
+        if (treePostCount >= maxTreePosts) {
+          addTreePostBtn.disabled = true;
+          addTreePostBtn.style.opacity = '0.5';
+        }
+      });
+    }
+    
+    // 初期ツリーアイテムのイベント
+    self.bindTreePostItemEvents(0);
+    
+    // メディアイベントをバインド
+    self.bindMediaEvents('single');
+    self.bindMediaEvents('tree-0');
+    
+    // 投稿方法選択
+    var postOptions = document.querySelectorAll('.post-option');
+    var scheduleInput = document.getElementById('scheduleInput');
+    postOptions.forEach(function(option) {
+      option.addEventListener('click', function() {
+        postOptions.forEach(function(o) { o.classList.remove('selected'); });
+        option.classList.add('selected');
+        
+        if (option.getAttribute('data-type') === 'schedule') {
+          scheduleInput.style.display = 'block';
+          var now = new Date();
+          now.setHours(now.getHours() + 1);
+          now.setMinutes(0);
+          document.getElementById('scheduleTime').value = now.toISOString().slice(0, 16);
+        } else {
+          scheduleInput.style.display = 'none';
+        }
+      });
+    });
+    
+    // クイック時間ボタン
+    var quickBtns = document.querySelectorAll('.quick-time-btn');
+    quickBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var hours = parseInt(this.dataset.hours);
+        var date = new Date();
+        date.setHours(date.getHours() + hours);
+        
+        var year = date.getFullYear();
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var day = String(date.getDate()).padStart(2, '0');
+        var hour = String(date.getHours()).padStart(2, '0');
+        var minute = String(date.getMinutes()).padStart(2, '0');
+        
+        document.getElementById('scheduleTime').value = year + '-' + month + '-' + day + 'T' + hour + ':' + minute;
+        
+        quickBtns.forEach(function(b) {
+          b.style.background = '';
+          b.style.color = '';
+          b.style.borderColor = '';
+        });
+        this.style.background = 'var(--accent-color)';
+        this.style.color = 'var(--bg-primary)';
+        this.style.borderColor = 'var(--accent-color)';
+      });
+    });
+    
+    // 投稿ボタン
+    var submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', async function() {
+        var isTreeMode = document.querySelector('.compose-mode-tab.active').getAttribute('data-mode') === 'tree';
+        var isScheduled = document.querySelector('.post-option.selected').getAttribute('data-type') === 'schedule';
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = isScheduled ? '予約中...' : '投稿中...';
+        
+        try {
+          if (isTreeMode) {
+            // ツリー投稿
+            await self.submitTreePost(isScheduled);
+          } else {
+            // 単独投稿
+            await self.submitSinglePost(isScheduled);
+          }
+        } catch (error) {
+          self.showToast('エラー: ' + error.message, 'error');
+        }
+        
+        submitBtn.disabled = false;
+        submitBtn.textContent = '投稿する';
+      });
+    }
+        
+    // ★Phase1: 下書き復元バナーを表示
+    Phase1.showDraftBanner();
+
+    // ★Phase1: 自動保存タイマー開始
+    Phase1.startAutoSave();
+
+    // ★Phase1: 前回の設定を復元（下書きがない場合のみ）
+    if (!Phase1.getDraft()) {
+      Phase1.restoreLastSettings();
+    }
+
+    // ★Phase2: 時刻プリセットのイベントをバインド
+    Phase2.bindPresetEvents();
+
+    // ★Phase2: 直近の投稿プレビューを読み込み
+    Phase2.loadRecentPosts();
+    Phase2.bindRecentPostsEvents();
+
+    // ★Phase3: テンプレートボタンのイベント
+    Phase3.bindTemplateEvents();
+
+    // ★Phase3: トークン期限警告バナー
+    Phase3.initTokenWarnings();
+
+  };
+
+App.bindTreePostItemEvents = function(index) {
+    var self = this;
+    
+    // 文字数カウント
+    var textarea = document.querySelector('.tree-post-text[data-index="' + index + '"]');
+    var charCountEl = document.querySelector('.tree-char-count[data-index="' + index + '"]');
+    
+    if (textarea && charCountEl) {
+      textarea.addEventListener('input', function() {
+        var count = this.value.length;
+        charCountEl.textContent = count;
+        charCountEl.parentElement.className = 'char-count' + 
+          (count > 450 ? ' warning' : '') + 
+          (count >= 500 ? ' error' : '');
+      });
+    }
+    
+    // メディア追加トグル
+    var mediaToggle = document.querySelector('.tree-media-toggle[data-index="' + index + '"]');
+    var mediaContent = document.querySelector('.tree-media-content[data-index="' + index + '"]');
+    
+    if (mediaToggle && mediaContent) {
+      mediaToggle.addEventListener('click', function() {
+        if (mediaContent.style.display === 'none') {
+          mediaContent.style.display = 'block';
+          mediaToggle.innerHTML = '<span>📎 メディアを閉じる</span>';
+        } else {
+          mediaContent.style.display = 'none';
+          mediaToggle.innerHTML = '<span>📎 メディアを追加</span>';
+        }
+      });
+    }
+    
+    // 削除ボタン
+    var deleteBtn = document.querySelector('.tree-post-delete[data-index="' + index + '"]');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', function() {
+        var item = document.querySelector('.tree-post-item[data-index="' + index + '"]');
+        if (item) {
+          item.remove();
+          self.updateTreePostNumbers();
+        }
+      });
+    }
+  };
+
+App.updateTreePostNumbers = function() {
+    var items = document.querySelectorAll('.tree-post-item');
+    var count = items.length;
+    
+    items.forEach(function(item, i) {
+      var numberEl = item.querySelector('.tree-post-number');
+      if (numberEl) {
+        numberEl.textContent = i === 0 ? '親投稿' : '返信 ' + i;
+      }
+    });
+    
+    var treePostCountEl = document.getElementById('treePostCount');
+    if (treePostCountEl) {
+      treePostCountEl.textContent = count + ' / 10 件';
+    }
+    
+    var addBtn = document.getElementById('addTreePostBtn');
+    if (addBtn) {
+      addBtn.disabled = count >= 10;
+      addBtn.style.opacity = count >= 10 ? '0.5' : '1';
+    }
+  };
+
+App.bindMediaEvents = function(prefix) {
+  var self = this;
+  
+  // 画像/動画選択ボタン（フォルダから）
+  var selectBtns = document.querySelectorAll('.media-select-btn[data-prefix="' + prefix + '"]');
+  selectBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var type = this.getAttribute('data-type');
+      var fileInput = document.querySelector('.media-file-input[data-prefix="' + prefix + '"][data-type="' + type + '"]');
+      if (fileInput) fileInput.click();
+    });
+  });
+  
+  // 📸 カメラ直接起動ボタン
+  var cameraBtn = document.querySelector('.camera-btn[data-prefix="' + prefix + '"]');
+  var cameraInput = document.querySelector('.camera-file-input[data-prefix="' + prefix + '"]');
+  
+  if (cameraBtn && cameraInput) {
+    cameraBtn.addEventListener('click', function() {
+      cameraInput.click();
+    });
+    
+    cameraInput.addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      
+      if (file.size > 8 * 1024 * 1024) {
+        self.showToast('画像は8MB以下にしてください', 'error');
+        this.value = '';
+        return;
+      }
+      
+      var progressEl = document.querySelector('.upload-progress[data-prefix="' + prefix + '"]');
+      var progressBar = document.querySelector('.progress-bar[data-prefix="' + prefix + '"]');
+      
+      if (progressEl) progressEl.style.display = 'block';
+      if (progressBar) progressBar.style.width = '30%';
+      
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        if (progressBar) progressBar.style.width = '60%';
+        
+        self.api('uploadImage', {
+          base64Data: e.target.result,
+          fileName: file.name || 'camera-' + Date.now() + '.jpg'
+        }).then(function(result) {
+          if (progressBar) progressBar.style.width = '100%';
+          if (result && result.url) {
+            self.showMediaPreview(prefix, result.url, 'IMAGE');
+            self.showToast('画像をアップロードしました', 'success');
+          }
+          setTimeout(function() {
+            if (progressEl) progressEl.style.display = 'none';
+            if (progressBar) progressBar.style.width = '0%';
+          }, 500);
+        }).catch(function(err) {
+          self.showToast('アップロードエラー: ' + err.message, 'error');
+          if (progressEl) progressEl.style.display = 'none';
+          if (progressBar) progressBar.style.width = '0%';
+        });
+      };
+      reader.readAsDataURL(file);
+      this.value = '';
+    });
+  }
+  
+  // ファイル選択（フォルダから）
+  var fileInputs = document.querySelectorAll('.media-file-input[data-prefix="' + prefix + '"]');
+  fileInputs.forEach(function(input) {
+    input.addEventListener('change', async function() {
+      var file = this.files[0];
+      if (!file) return;
+      
+      var type = this.getAttribute('data-type');
+      var maxSize = type === 'video' ? 100 * 1024 * 1024 : 8 * 1024 * 1024;
+      
+      if (file.size > maxSize) {
+        self.showToast((type === 'video' ? '動画は100MB' : '画像は8MB') + '以下にしてください', 'error');
+        return;
+      }
+      
+      var progressEl = document.querySelector('.upload-progress[data-prefix="' + prefix + '"]');
+      var progressBar = document.querySelector('.progress-bar[data-prefix="' + prefix + '"]');
+      
+      progressEl.style.display = 'block';
+      progressBar.style.width = '30%';
+      
+      try {
+        var reader = new FileReader();
+        reader.onload = async function(e) {
+          progressBar.style.width = '60%';
+          
+          try {
+            var apiMethod = type === 'video' ? 'uploadVideo' : 'uploadImage';
+            var result = await self.api(apiMethod, {
+              base64Data: e.target.result,
+              fileName: file.name
+            });
+            
+            progressBar.style.width = '100%';
+            
+            if (result && result.url) {
+              self.showMediaPreview(prefix, result.url, type === 'video' ? 'VIDEO' : 'IMAGE');
+              self.showToast((type === 'video' ? '動画' : '画像') + 'をアップロードしました', 'success');
+            } else {
+              throw new Error(result.error || 'URLの取得に失敗しました');
+            }
+          } catch (err) {
+            self.showToast('アップロードエラー: ' + err.message, 'error');
+          }
+          
+          progressEl.style.display = 'none';
+          progressBar.style.width = '0%';
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        self.showToast('ファイル読み込みエラー', 'error');
+        progressEl.style.display = 'none';
+      }
+      
+      this.value = '';
+    });
+  });
+  
+  // メディア削除ボタン
+  var removeBtn = document.querySelector('.media-remove-btn[data-prefix="' + prefix + '"]');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', function() {
+      self.clearMediaPreview(prefix);
+      self.showToast('メディアを削除しました', 'info');
+    });
+  }
+};
+
+App.showMediaPreview = function(prefix, url, type) {
+    var preview = document.querySelector('.media-preview[data-prefix="' + prefix + '"]');
+    var label = document.querySelector('.media-type-label[data-prefix="' + prefix + '"]');
+    var image = document.querySelector('.preview-image[data-prefix="' + prefix + '"]');
+    var video = document.querySelector('.preview-video[data-prefix="' + prefix + '"]');
+    var urlInput = document.querySelector('.final-media-url[data-prefix="' + prefix + '"]');
+    var typeInput = document.querySelector('.final-media-type[data-prefix="' + prefix + '"]');
+    
+    preview.style.display = 'block';
+    label.textContent = type === 'VIDEO' ? '動画' : '画像';
+    urlInput.value = url;
+    typeInput.value = type;
+    
+    if (type === 'VIDEO') {
+      image.style.display = 'none';
+      video.style.display = 'block';
+      video.src = url;
+    } else {
+      video.style.display = 'none';
+      image.style.display = 'block';
+      image.src = url;
+    }
+  };
+
+App.clearMediaPreview = function(prefix) {
+    var preview = document.querySelector('.media-preview[data-prefix="' + prefix + '"]');
+    var image = document.querySelector('.preview-image[data-prefix="' + prefix + '"]');
+    var video = document.querySelector('.preview-video[data-prefix="' + prefix + '"]');
+    var urlInput = document.querySelector('.final-media-url[data-prefix="' + prefix + '"]');
+    var typeInput = document.querySelector('.final-media-type[data-prefix="' + prefix + '"]');
+    
+    if (preview) preview.style.display = 'none';
+    if (image) { image.style.display = 'none'; image.src = ''; }
+    if (video) { video.style.display = 'none'; video.src = ''; }
+    if (urlInput) urlInput.value = '';
+    if (typeInput) typeInput.value = '';
+  };
+
+App.submitSinglePost = async function(isScheduled) {
+  var self = this;
+  var text = document.getElementById('postText').value.trim();
+  var mediaUrl = document.querySelector('.final-media-url[data-prefix="single"]').value.trim();
+  var mediaType = document.querySelector('.final-media-type[data-prefix="single"]').value;
+  
+  if (!text && !mediaUrl) {
+    self.showToast('投稿内容またはメディアを追加してください', 'error');
+    throw new Error('入力がありません');
+  }
+  
+  var scheduledTimeValue = '';
+  
+  if (isScheduled) {
+    var scheduleTime = document.getElementById('scheduleTime').value;
+    if (!scheduleTime) {
+      self.showToast('投稿日時を選択してください', 'error');
+      throw new Error('日時未選択');
+    }
+    scheduledTimeValue = new Date(scheduleTime).toISOString();
+    
+    await self.api('schedulePost', {
+      text: text,
+      mediaUrl: mediaUrl || null,
+      mediaType: mediaUrl ? mediaType : null,
+      scheduledTime: scheduledTimeValue
+    });
+  } else {
+    await self.api('createPost', { 
+      text: text,
+      mediaUrl: mediaUrl || null,
+      mediaType: mediaUrl ? mediaType : null
+    });
+  }
+  
+  // フォームリセット
+  document.getElementById('postText').value = '';
+  document.getElementById('charCount').textContent = '0';
+  self.clearMediaPreview('single');
+
+  // ★Phase1
+  Phase1.clearDraft();
+  Phase1.saveLastSettings();
+
+  // ★Phase2: 成功モーダル表示
+  Phase2.showPostSuccessModal({
+    isScheduled: isScheduled,
+    isTree: false,
+    text: text,
+    mediaUrl: mediaUrl,
+    mediaType: mediaType,
+    scheduledTime: scheduledTimeValue
+  });
+
+  // ★Phase2: 直近投稿を更新
+  Phase2.loadRecentPosts();
+};
+
+App.submitTreePost = async function(isScheduled) {
+    var self = this;
+    var items = document.querySelectorAll('.tree-post-item');
+    var posts = [];
+    
+    items.forEach(function(item, index) {
+      var textarea = item.querySelector('.tree-post-text');
+      var mediaUrl = item.querySelector('.final-media-url');
+      var mediaType = item.querySelector('.final-media-type');
+      
+      var text = textarea ? textarea.value.trim() : '';
+      var url = mediaUrl ? mediaUrl.value.trim() : '';
+      var type = mediaType ? mediaType.value : '';
+      
+      if (text || url) {
+        posts.push({
+          text: text,
+          mediaUrl: url || null,
+          mediaType: url ? type : null,
+          orderNum: index + 1
+        });
+      }
+    });
+    
+    if (posts.length === 0) {
+      self.showToast('投稿内容を入力してください', 'error');
+      throw new Error('入力がありません');
+    }
+    
+    if (posts.length < 2) {
+      self.showToast('ツリー投稿は2件以上必要です', 'error');
+      throw new Error('投稿数不足');
+    }
+    
+    if (isScheduled) {
+      var scheduleTime = document.getElementById('scheduleTime').value;
+      if (!scheduleTime) {
+        self.showToast('投稿日時を選択してください', 'error');
+        throw new Error('日時未選択');
+      }
+      
+      await self.api('scheduleTreePost', {
+        posts: posts,
+        scheduledTime: new Date(scheduleTime).toISOString()
+      });
+      
+      self.showToast(posts.length + '件のツリー投稿を予約しました！', 'success');
+    } else {
+      await self.api('createTreePost', { posts: posts });
+      self.showToast(posts.length + '件のツリー投稿を送信しました！', 'success');
+    }
+    
+      // フォームリセット
+      self.resetTreePostForm();
+
+      // ★Phase1
+      Phase1.clearDraft();
+      Phase1.saveLastSettings();
+
+      // ★Phase2: 成功モーダル表示
+      Phase2.showPostSuccessModal({
+        isScheduled: isScheduled,
+        isTree: true,
+        text: posts[0] ? posts[0].text : '',
+        scheduledTime: isScheduled ? new Date(document.getElementById       ('scheduleTime').value).toISOString() : ''
+      });
+
+      // ★Phase2: 直近投稿を更新
+      Phase2.loadRecentPosts();
+    };
+
+App.resetTreePostForm = function() {
+    var self = this;
+    var treePostList = document.getElementById('treePostList');
+    treePostList.innerHTML = self.renderTreePostItem(0, true);
+    
+    self.bindTreePostItemEvents(0);
+    self.bindMediaEvents('tree-0');
+    
+    var treePostCountEl = document.getElementById('treePostCount');
+    if (treePostCountEl) treePostCountEl.textContent = '1 / 10 件';
+    
+    var addBtn = document.getElementById('addTreePostBtn');
+    if (addBtn) {
+      addBtn.disabled = false;
+      addBtn.style.opacity = '1';
+    }
+  };
+
+
+
+// ===========================================
+// Phase 1: 即効性のあるフロント改善
+// ===========================================
+
+var Phase1 = {
+
+  // -----------------------------------------
+  // 1-1. 下書き自動保存・復元
+  // -----------------------------------------
+  DRAFT_KEY: 'threads_draft',
+  DRAFT_INTERVAL: 10000, // 10秒
+  _draftTimer: null,
+
+  // 下書きデータを収集
+  collectDraft: function() {
+    var screen = App.state.currentScreen;
+    if (screen !== 'compose') return null;
+
+    var modeTab = document.querySelector('.compose-mode-tab.active');
+    var mode = modeTab ? modeTab.getAttribute('data-mode') : 'single';
+    var postType = 'now';
+    var selectedOption = document.querySelector('.post-option.selected');
+    if (selectedOption) postType = selectedOption.getAttribute('data-type');
+
+    var draft = {
+      mode: mode,
+      postType: postType,
+      scheduleTime: '',
+      savedAt: new Date().toISOString(),
+      single: { text: '', mediaUrl: '', mediaType: '' },
+      tree: []
+    };
+
+    // 予約時刻
+    var scheduleTimeEl = document.getElementById('scheduleTime');
+    if (scheduleTimeEl) draft.scheduleTime = scheduleTimeEl.value;
+
+    if (mode === 'single') {
+      var postText = document.getElementById('postText');
+      var mediaUrl = document.querySelector('.final-media-url[data-prefix="single"]');
+      var mediaType = document.querySelector('.final-media-type[data-prefix="single"]');
+      draft.single = {
+        text: postText ? postText.value : '',
+        mediaUrl: mediaUrl ? mediaUrl.value : '',
+        mediaType: mediaType ? mediaType.value : ''
+      };
+    } else {
+      var items = document.querySelectorAll('.tree-post-item');
+      items.forEach(function(item, idx) {
+        var textarea = item.querySelector('.tree-post-text');
+        var mediaUrl = item.querySelector('.final-media-url');
+        var mediaType = item.querySelector('.final-media-type');
+        draft.tree.push({
+          text: textarea ? textarea.value : '',
+          mediaUrl: mediaUrl ? mediaUrl.value : '',
+          mediaType: mediaType ? mediaType.value : ''
+        });
+      });
+    }
+
+    // 空の下書きは保存しない
+    var hasContent = draft.single.text || draft.single.mediaUrl;
+    if (!hasContent && draft.tree.length > 0) {
+      hasContent = draft.tree.some(function(t) { return t.text || t.mediaUrl; });
+    }
+
+    return hasContent ? draft : null;
+  },
+
+  // 下書きを保存
+  saveDraft: function() {
+    try {
+      var draft = this.collectDraft();
+      if (draft) {
+        localStorage.setItem(this.DRAFT_KEY, JSON.stringify(draft));
+      }
+    } catch (e) {
+      console.log('下書き保存エラー:', e.message);
+    }
+  },
+
+  // 下書きを取得
+  getDraft: function() {
+    try {
+      var json = localStorage.getItem(this.DRAFT_KEY);
+      if (!json) return null;
+      var draft = JSON.parse(json);
+
+      // 24時間以上前の下書きは破棄
+      var savedAt = new Date(draft.savedAt);
+      if (Date.now() - savedAt.getTime() > 24 * 60 * 60 * 1000) {
+        this.clearDraft();
+        return null;
+      }
+      return draft;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  // 下書きをクリア
+  clearDraft: function() {
+    localStorage.removeItem(this.DRAFT_KEY);
+  },
+
+  // 下書き復元バナーを表示
+  showDraftBanner: function() {
+    var draft = this.getDraft();
+    if (!draft) return;
+
+    var savedDate = new Date(draft.savedAt);
+    var timeStr = savedDate.toLocaleString('ja-JP');
+    var previewText = '';
+    if (draft.mode === 'single') {
+      previewText = (draft.single.text || '').substring(0, 40);
+    } else if (draft.tree.length > 0) {
+      previewText = (draft.tree[0].text || '').substring(0, 40);
+      if (draft.tree.length > 1) previewText += '… (他' + (draft.tree.length - 1) + '件)';
+    }
+
+    var banner = document.createElement('div');
+    banner.id = 'draftBanner';
+    banner.style.cssText = 'margin:16px;padding:14px 16px;background:var(--info-bg);border:1px solid var(--info-color);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:space-between;gap:12px;animation:slideDown 0.3s ease;';
+    banner.innerHTML =
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--info-color);margin-bottom:2px;">📝 下書きがあります</div>' +
+        '<div style="font-size:12px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+          previewText + ' (' + timeStr + ')' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+        '<button id="restoreDraftBtn" style="padding:6px 14px;background:var(--info-color);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;">復元</button>' +
+        '<button id="discardDraftBtn" style="padding:6px 10px;background:transparent;color:var(--text-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-sm);font-size:12px;cursor:pointer;">✕</button>' +
+      '</div>';
+
+    var composeArea = document.querySelector('.compose-area');
+    if (composeArea) {
+      composeArea.insertBefore(banner, composeArea.firstChild);
+
+      document.getElementById('restoreDraftBtn').addEventListener('click', function() {
+        Phase1.restoreDraft(draft);
+        banner.remove();
+      });
+      document.getElementById('discardDraftBtn').addEventListener('click', function() {
+        Phase1.clearDraft();
+        banner.remove();
+      });
+    }
+  },
+
+  // 下書きを復元
+  restoreDraft: function(draft) {
+    if (!draft) return;
+
+    // モード復元
+    var modeTab = document.querySelector('.compose-mode-tab[data-mode="' + draft.mode + '"]');
+    if (modeTab) modeTab.click();
+
+    // 投稿方法復元
+    var optionEl = document.querySelector('.post-option[data-type="' + draft.postType + '"]');
+    if (optionEl) optionEl.click();
+
+    // 予約時刻復元
+    if (draft.scheduleTime) {
+      var scheduleTimeEl = document.getElementById('scheduleTime');
+      if (scheduleTimeEl) scheduleTimeEl.value = draft.scheduleTime;
+    }
+
+    if (draft.mode === 'single') {
+      var postText = document.getElementById('postText');
+      var charCount = document.getElementById('charCount');
+      if (postText && draft.single.text) {
+        postText.value = draft.single.text;
+        if (charCount) charCount.textContent = draft.single.text.length;
+      }
+      if (draft.single.mediaUrl) {
+        App.showMediaPreview('single', draft.single.mediaUrl, draft.single.mediaType || 'IMAGE');
+      }
+    } else {
+      // ツリー投稿復元
+      for (var i = 0; i < draft.tree.length; i++) {
+        if (i > 0) {
+          var addBtn = document.getElementById('addTreePostBtn');
+          if (addBtn) addBtn.click();
+        }
+        var textarea = document.querySelector('.tree-post-text[data-index="' + i + '"]');
+        var charEl = document.querySelector('.tree-char-count[data-index="' + i + '"]');
+        if (textarea && draft.tree[i].text) {
+          textarea.value = draft.tree[i].text;
+          if (charEl) charEl.textContent = draft.tree[i].text.length;
+        }
+        if (draft.tree[i].mediaUrl) {
+          App.showMediaPreview('tree-' + i, draft.tree[i].mediaUrl, draft.tree[i].mediaType || 'IMAGE');
+        }
+      }
+    }
+
+    this.clearDraft();
+    App.showToast('下書きを復元しました', 'success');
+  },
+
+  // 自動保存タイマー開始
+  startAutoSave: function() {
+    var self = this;
+    this.stopAutoSave();
+    this._draftTimer = setInterval(function() {
+      self.saveDraft();
+    }, this.DRAFT_INTERVAL);
+  },
+
+  // 自動保存タイマー停止
+  stopAutoSave: function() {
+    if (this._draftTimer) {
+      clearInterval(this._draftTimer);
+      this._draftTimer = null;
+    }
+  },
+
+  // -----------------------------------------
+  // 1-2. 前回設定の記憶
+  // -----------------------------------------
+  LAST_SETTINGS_KEY: 'threads_last_settings',
+
+  saveLastSettings: function() {
+    try {
+      var modeTab = document.querySelector('.compose-mode-tab.active');
+      var mode = modeTab ? modeTab.getAttribute('data-mode') : 'single';
+      var postType = 'now';
+      var selectedOption = document.querySelector('.post-option.selected');
+      if (selectedOption) postType = selectedOption.getAttribute('data-type');
+
+      var settings = { mode: mode, postType: postType };
+      localStorage.setItem(this.LAST_SETTINGS_KEY, JSON.stringify(settings));
+    } catch (e) {}
+  },
+
+  restoreLastSettings: function() {
+    try {
+      var json = localStorage.getItem(this.LAST_SETTINGS_KEY);
+      if (!json) return;
+      var settings = JSON.parse(json);
+
+      if (settings.mode) {
+        var tab = document.querySelector('.compose-mode-tab[data-mode="' + settings.mode + '"]');
+        if (tab) tab.click();
+      }
+      if (settings.postType) {
+        var opt = document.querySelector('.post-option[data-type="' + settings.postType + '"]');
+        if (opt) opt.click();
+      }
+    } catch (e) {}
+  },
+
+  // -----------------------------------------
+  // 1-3. クリップボード画像ペースト（PC）
+  // -----------------------------------------
+  initClipboardPaste: function() {
+    var self = this;
+    document.addEventListener('paste', function(e) {
+      if (App.state.currentScreen !== 'compose') return;
+
+      var items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      if (!items) return;
+
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image/') === 0) {
+          e.preventDefault();
+          var file = items[i].getAsFile();
+          if (!file) continue;
+
+          // 8MB制限
+          if (file.size > 8 * 1024 * 1024) {
+            App.showToast('画像は8MB以下にしてください', 'error');
+            return;
+          }
+
+          // アクティブなメディアプレフィックスを判定
+          var prefix = self.getActiveMediaPrefix();
+          self.uploadPastedImage(file, prefix);
+          return;
+        }
+      }
+    });
+  },
+
+  getActiveMediaPrefix: function() {
+    var modeTab = document.querySelector('.compose-mode-tab.active');
+    var mode = modeTab ? modeTab.getAttribute('data-mode') : 'single';
+
+    if (mode === 'single') return 'single';
+
+    // ツリーモード：最後にフォーカスしたテキストエリアのインデックスを使用
+    var focused = document.activeElement;
+    if (focused && focused.classList.contains('tree-post-text')) {
+      return 'tree-' + focused.getAttribute('data-index');
+    }
+    return 'tree-0';
+  },
+
+  uploadPastedImage: function(file, prefix) {
+    var progressEl = document.querySelector('.upload-progress[data-prefix="' + prefix + '"]');
+    var progressBar = document.querySelector('.progress-bar[data-prefix="' + prefix + '"]');
+
+    // メディアセクションを開く（ツリーモードの場合）
+    if (prefix.indexOf('tree-') === 0) {
+      var idx = prefix.replace('tree-', '');
+      var mediaContent = document.querySelector('.tree-media-content[data-index="' + idx + '"]');
+      var mediaToggle = document.querySelector('.tree-media-toggle[data-index="' + idx + '"]');
+      if (mediaContent && mediaContent.style.display === 'none') {
+        mediaContent.style.display = 'block';
+        if (mediaToggle) mediaToggle.innerHTML = '<span>📎 メディアを閉じる</span>';
+      }
+    }
+
+    if (progressEl) progressEl.style.display = 'block';
+    if (progressBar) progressBar.style.width = '30%';
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      if (progressBar) progressBar.style.width = '60%';
+
+      App.api('uploadImage', {
+        base64Data: e.target.result,
+        fileName: 'pasted-' + Date.now() + '.png'
+      }).then(function(result) {
+        if (progressBar) progressBar.style.width = '100%';
+        if (result && result.url) {
+          App.showMediaPreview(prefix, result.url, 'IMAGE');
+          App.showToast('クリップボードの画像をアップロードしました', 'success');
+        }
+        setTimeout(function() {
+          if (progressEl) progressEl.style.display = 'none';
+          if (progressBar) progressBar.style.width = '0%';
+        }, 500);
+      }).catch(function(err) {
+        App.showToast('アップロードエラー: ' + err.message, 'error');
+        if (progressEl) progressEl.style.display = 'none';
+        if (progressBar) progressBar.style.width = '0%';
+      });
+    };
+    reader.readAsDataURL(file);
+  },
+
+  // -----------------------------------------
+  // 1-4. Phase 1 初期化
+  // -----------------------------------------
+  init: function() {
+    this.initClipboardPaste();
+    console.log('Phase1 初期化完了');
+  }
+};
+
+// グローバル初期化
+document.addEventListener('DOMContentLoaded', function() {
+  Phase1.init();
+});
+
+// ===========================================
+// Phase 2: 投稿導線の短縮
+// ===========================================
+
+var Phase2 = {
+
+  // -----------------------------------------
+  // 2-1. よく使う時刻プリセット（ユーザー編集可能）
+  // -----------------------------------------
+  PRESETS_KEY: 'threads_time_presets',
+
+  // デフォルトプリセット
+  DEFAULT_PRESETS: [
+    { label: '朝 7:00', hour: 7, minute: 0 },
+    { label: '昼 12:00', hour: 12, minute: 0 },
+    { label: '夕 18:00', hour: 18, minute: 0 },
+    { label: '夜 21:00', hour: 21, minute: 0 }
+  ],
+
+  getPresets: function() {
+    try {
+      var json = localStorage.getItem(this.PRESETS_KEY);
+      if (json) return JSON.parse(json);
+    } catch (e) {}
+    return this.DEFAULT_PRESETS.slice();
+  },
+
+  savePresets: function(presets) {
+    localStorage.setItem(this.PRESETS_KEY, JSON.stringify(presets));
+  },
+
+  // プリセットチップHTMLを生成
+  renderPresetChips: function() {
+    var presets = this.getPresets();
+    var html = '<div id="timePresetArea" style="margin-top:12px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+        '<span style="font-size:12px;font-weight:600;color:var(--text-secondary);">よく使う時刻</span>' +
+        '<button type="button" id="editPresetsBtn" style="background:none;border:none;font-size:11px;color:var(--info-color);cursor:pointer;font-weight:600;padding:4px 8px;">プリセット編集</button>' +
+      '</div>' +
+      '<div id="presetChips" style="display:flex;gap:6px;flex-wrap:wrap;">';
+
+    presets.forEach(function(p, i) {
+      html += '<button type="button" class="time-preset-chip" data-index="' + i + '" data-hour="' + p.hour + '" data-minute="' + p.minute + '">' +
+        p.label +
+      '</button>';
+    });
+
+    html += '</div></div>';
+    return html;
+  },
+
+  // プリセットチップのイベントをバインド
+  bindPresetEvents: function() {
+    var self = this;
+
+    // チップクリック → 日時セット
+    document.querySelectorAll('.time-preset-chip').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        var hour = parseInt(this.getAttribute('data-hour'));
+        var minute = parseInt(this.getAttribute('data-minute'));
+        var now = new Date();
+        var target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute);
+
+        // 過去の時刻なら翌日にする
+        if (target <= now) {
+          target.setDate(target.getDate() + 1);
+        }
+
+        var y = target.getFullYear();
+        var m = String(target.getMonth() + 1).padStart(2, '0');
+        var d = String(target.getDate()).padStart(2, '0');
+        var h = String(target.getHours()).padStart(2, '0');
+        var min = String(target.getMinutes()).padStart(2, '0');
+
+        var scheduleTimeEl = document.getElementById('scheduleTime');
+        if (scheduleTimeEl) {
+          scheduleTimeEl.value = y + '-' + m + '-' + d + 'T' + h + ':' + min;
+        }
+
+        // 予約モードに切り替え
+        var scheduleOption = document.querySelector('.post-option[data-type="schedule"]');
+        if (scheduleOption && !scheduleOption.classList.contains('selected')) {
+          scheduleOption.click();
+        }
+
+        // チップのハイライト
+        document.querySelectorAll('.time-preset-chip').forEach(function(c) {
+          c.classList.remove('active');
+        });
+        this.classList.add('active');
+
+        App.showToast(this.textContent + ' に設定しました', 'success');
+      });
+    });
+
+    // 編集ボタン
+    var editBtn = document.getElementById('editPresetsBtn');
+    if (editBtn) {
+      editBtn.addEventListener('click', function() {
+        self.showEditPresetsModal();
+      });
+    }
+  },
+
+  // プリセット編集モーダル
+  showEditPresetsModal: function() {
+    var self = this;
+    var presets = this.getPresets();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'editPresetsModal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:1000;padding:20px;';
+
+    var listHtml = '';
+    presets.forEach(function(p, i) {
+      listHtml += '<div class="preset-edit-row" data-index="' + i + '" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
+        '<input type="text" class="preset-label-input input" value="' + (p.label || '') + '" placeholder="ラベル" style="flex:1;padding:10px;font-size:13px;">' +
+        '<input type="number" class="preset-hour-input input" value="' + p.hour + '" min="0" max="23" style="width:60px;padding:10px;font-size:13px;text-align:center;">' +
+        '<span style="color:var(--text-tertiary);">:</span>' +
+        '<input type="number" class="preset-minute-input input" value="' + p.minute + '" min="0" max="59" step="5" style="width:60px;padding:10px;font-size:13px;text-align:center;">' +
+        '<button type="button" class="preset-delete-btn" data-index="' + i + '" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--error-bg);color:var(--error-color);font-size:14px;cursor:pointer;flex-shrink:0;">✕</button>' +
+      '</div>';
+    });
+
+    overlay.innerHTML =
+      '<div style="background:var(--bg-primary);border-radius:16px;padding:24px;max-width:450px;width:100%;max-height:80vh;overflow-y:auto;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+          '<h3 style="margin:0;font-size:18px;font-weight:700;">時刻プリセット編集</h3>' +
+          '<button id="closePresetsModal" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text-tertiary);">✕</button>' +
+        '</div>' +
+        '<div id="presetEditList">' + listHtml + '</div>' +
+        '<button type="button" id="addPresetBtn" class="btn btn-secondary btn-full" style="margin-top:8px;margin-bottom:16px;">' +
+          '＋ プリセットを追加' +
+        '</button>' +
+        '<div style="display:flex;gap:8px;">' +
+          '<button type="button" id="resetPresetsBtn" class="btn btn-secondary" style="flex:1;">初期値に戻す</button>' +
+          '<button type="button" id="savePresetsBtn" class="btn btn-primary" style="flex:1;">保存</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    // 閉じる
+    document.getElementById('closePresetsModal').addEventListener('click', function() {
+      overlay.remove();
+    });
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    // 削除ボタン
+    overlay.querySelectorAll('.preset-delete-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        this.closest('.preset-edit-row').remove();
+      });
+    });
+
+    // 追加ボタン
+    document.getElementById('addPresetBtn').addEventListener('click', function() {
+      var list = document.getElementById('presetEditList');
+      var idx = list.children.length;
+      var newRow = document.createElement('div');
+      newRow.className = 'preset-edit-row';
+      newRow.setAttribute('data-index', idx);
+      newRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+      newRow.innerHTML =
+        '<input type="text" class="preset-label-input input" value="" placeholder="ラベル" style="flex:1;padding:10px;font-size:13px;">' +
+        '<input type="number" class="preset-hour-input input" value="9" min="0" max="23" style="width:60px;padding:10px;font-size:13px;text-align:center;">' +
+        '<span style="color:var(--text-tertiary);">:</span>' +
+        '<input type="number" class="preset-minute-input input" value="0" min="0" max="59" step="5" style="width:60px;padding:10px;font-size:13px;text-align:center;">' +
+        '<button type="button" class="preset-delete-btn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--error-bg);color:var(--error-color);font-size:14px;cursor:pointer;flex-shrink:0;">✕</button>';
+      list.appendChild(newRow);
+
+      newRow.querySelector('.preset-delete-btn').addEventListener('click', function() {
+        newRow.remove();
+      });
+    });
+
+    // 初期値に戻す
+    document.getElementById('resetPresetsBtn').addEventListener('click', function() {
+      if (!confirm('プリセットを初期値に戻しますか？\n現在の設定は失われます。')) return;
+      self.savePresets(self.DEFAULT_PRESETS.slice());
+      overlay.remove();
+      self.refreshPresetChips();
+      App.showToast('初期値に戻しました', 'success');
+    });
+
+    // 保存
+    document.getElementById('savePresetsBtn').addEventListener('click', function() {
+      var rows = document.querySelectorAll('#presetEditList .preset-edit-row');
+      var newPresets = [];
+      rows.forEach(function(row) {
+        var label = row.querySelector('.preset-label-input').value.trim();
+        var hour = parseInt(row.querySelector('.preset-hour-input').value) || 0;
+        var minute = parseInt(row.querySelector('.preset-minute-input').value) || 0;
+        if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+          if (!label) label = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+          newPresets.push({ label: label, hour: hour, minute: minute });
+        }
+      });
+      self.savePresets(newPresets);
+      overlay.remove();
+      self.refreshPresetChips();
+      App.showToast('プリセットを保存しました', 'success');
+    });
+  },
+
+  // プリセットチップを再描画
+  refreshPresetChips: function() {
+    var container = document.getElementById('timePresetArea');
+    if (container) {
+      var parent = container.parentElement;
+      var next = container.nextSibling;
+      container.remove();
+      var temp = document.createElement('div');
+      temp.innerHTML = this.renderPresetChips();
+      if (next) {
+        parent.insertBefore(temp.firstChild, next);
+      } else {
+        parent.appendChild(temp.firstChild);
+      }
+      this.bindPresetEvents();
+    }
+  },
+
+  // -----------------------------------------
+  // 2-2. 投稿成功後のアクション選択モーダル
+  // -----------------------------------------
+  showPostSuccessModal: function(options) {
+    var self = this;
+    options = options || {};
+    var isScheduled = options.isScheduled || false;
+    var isTree = options.isTree || false;
+    var text = options.text || '';
+    var scheduledTime = options.scheduledTime || '';
+
+    var overlay = document.createElement('div');
+    overlay.id = 'postSuccessModal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:1000;padding:20px;';
+
+    var title = isScheduled ? '予約完了！' : '投稿完了！';
+    var icon = isScheduled ? '📅' : '✅';
+
+    var actionsHtml = '';
+
+    // 続けて投稿
+    actionsHtml += '<button type="button" class="btn btn-primary btn-full post-success-action" data-action="continue" style="margin-bottom:8px;">✏️ 続けて投稿</button>';
+
+    // 予約を複製（予約投稿の場合のみ）
+    if (isScheduled && scheduledTime) {
+      actionsHtml += '<button type="button" class="btn btn-secondary btn-full post-success-action" data-action="duplicate-1h" style="margin-bottom:8px;">📋 同じ内容を1時間後に予約</button>';
+      actionsHtml += '<button type="button" class="btn btn-secondary btn-full post-success-action" data-action="duplicate-tomorrow" style="margin-bottom:8px;">📋 同じ内容を明日同時刻に予約</button>';
+    }
+
+    // 予約一覧を見る
+    actionsHtml += '<button type="button" class="btn btn-secondary btn-full post-success-action" data-action="schedule" style="margin-bottom:8px;">📅 予約一覧を確認</button>';
+
+    // 閉じる
+    actionsHtml += '<button type="button" class="btn btn-secondary btn-full post-success-action" data-action="close" style="color:var(--text-tertiary);">閉じる</button>';
+
+    overlay.innerHTML =
+      '<div style="background:var(--bg-primary);border-radius:20px;padding:28px;max-width:400px;width:100%;text-align:center;">' +
+        '<div style="font-size:56px;margin-bottom:12px;">' + icon + '</div>' +
+        '<div style="font-size:20px;font-weight:700;margin-bottom:8px;">' + title + '</div>' +
+        '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:24px;line-height:1.5;">' +
+          (text ? '"' + (text.length > 40 ? text.substring(0, 40) + '...' : text) + '"' : '') +
+          (isScheduled && scheduledTime ? '<br>' + new Date(scheduledTime).toLocaleString('ja-JP') + ' に予約済み' : '') +
+        '</div>' +
+        actionsHtml +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    // 背景クリックで閉じる
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    // アクションボタン
+    overlay.querySelectorAll('.post-success-action').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var action = this.getAttribute('data-action');
+        overlay.remove();
+
+        switch (action) {
+          case 'continue':
+            // 何もしない（フォームはリセット済み）
+            var postText = document.getElementById('postText');
+            if (postText) postText.focus();
+            break;
+
+          case 'duplicate-1h':
+            self.duplicateScheduledPost(text, options.mediaUrl, options.mediaType, scheduledTime, 1);
+            break;
+
+          case 'duplicate-tomorrow':
+            self.duplicateScheduledPost(text, options.mediaUrl, options.mediaType, scheduledTime, 24);
+            break;
+
+          case 'schedule':
+            App.showScreen('schedule');
+            break;
+
+          case 'close':
+            break;
+        }
+      });
+    });
+  },
+
+  // 予約を複製
+  duplicateScheduledPost: function(text, mediaUrl, mediaType, originalTime, hoursOffset) {
+    var newTime = new Date(originalTime);
+    newTime.setHours(newTime.getHours() + hoursOffset);
+
+    App.api('schedulePost', {
+      text: text,
+      mediaUrl: mediaUrl || null,
+      mediaType: mediaType || null,
+      scheduledTime: newTime.toISOString()
+    }).then(function() {
+      App.showToast('予約を複製しました（' + newTime.toLocaleString('ja-JP') + '）', 'success');
+    }).catch(function(err) {
+      App.showToast('複製エラー: ' + err.message, 'error');
+    });
+  },
+
+  // -----------------------------------------
+  // 2-3. 直近の投稿プレビュー
+  // -----------------------------------------
+  renderRecentPosts: function() {
+    return '<div id="recentPostsArea" style="margin-top:8px;">' +
+      '<div class="card" style="padding:14px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+          '<span style="font-size:13px;font-weight:600;color:var(--text-secondary);">直近の投稿</span>' +
+          '<button type="button" id="refreshRecentBtn" style="background:none;border:none;font-size:11px;color:var(--info-color);cursor:pointer;font-weight:600;padding:4px 8px;">更新</button>' +
+        '</div>' +
+        '<div id="recentPostsList" style="font-size:13px;color:var(--text-tertiary);text-align:center;padding:8px;">読み込み中...</div>' +
+      '</div>' +
+    '</div>';
+  },
+
+  loadRecentPosts: function() {
+    var container = document.getElementById('recentPostsList');
+    if (!container) return;
+
+    App.api('getHistory', { showAllAccounts: false })
+      .then(function(history) {
+        if (!history || history.length === 0) {
+          container.innerHTML = '<div style="padding:8px;color:var(--text-tertiary);">まだ投稿がありません</div>';
+          return;
+        }
+
+        var html = '';
+        var recent = history.slice(0, 2);
+        recent.forEach(function(item, idx) {
+          var timeStr = item.postedAt ? new Date(item.postedAt).toLocaleString('ja-JP') : '';
+          var textPreview = (item.text || '').substring(0, 60);
+          if ((item.text || '').length > 60) textPreview += '...';
+
+          var mediaIcon = '';
+          if (item.mediaUrl) {
+            mediaIcon = item.mediaType === 'VIDEO' ? ' 🎬' : ' 📷';
+          }
+
+          html += '<div style="padding:10px 0;' + (idx < recent.length - 1 ? 'border-bottom:1px solid var(--border-light);' : '') + '">' +
+            '<div style="font-size:13px;color:var(--text-primary);line-height:1.5;">' +
+              App.escapeHtml(textPreview) + mediaIcon +
+            '</div>' +
+            '<div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">' + timeStr + '</div>' +
+          '</div>';
+        });
+
+        container.innerHTML = html;
+      })
+      .catch(function() {
+        container.innerHTML = '<div style="padding:8px;color:var(--text-tertiary);">読み込みに失敗しました</div>';
+      });
+  },
+
+  bindRecentPostsEvents: function() {
+    var self = this;
+    var refreshBtn = document.getElementById('refreshRecentBtn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', function() {
+        self.loadRecentPosts();
+      });
+    }
+  }
+};
+
+// ===========================================
+// Phase 3: UX改善 & 安定性向上
+// ===========================================
+
+var Phase3 = {
+
+  // -----------------------------------------
+  // 3-1. トークン期限警告バナー
+  // -----------------------------------------
+  
+  _tokenWarnings: [],
+
+  // サーバーデータから警告を初期化（doGetで取得済み）
+  initTokenWarnings: function() {
+    if (typeof SERVER_DATA !== 'undefined' && SERVER_DATA.tokenWarnings) {
+      this._tokenWarnings = SERVER_DATA.tokenWarnings || [];
+    }
+    this.showTokenWarningBanner();
+  },
+
+  // API経由で最新の警告を取得
+  fetchTokenWarnings: async function() {
+    try {
+      var warnings = await App.api('getTokenWarnings', {});
+      this._tokenWarnings = warnings || [];
+      this.showTokenWarningBanner();
+    } catch (e) {
+      console.log('トークン警告取得エラー:', e.message);
+    }
+  },
+
+  // トークン期限警告バナーを表示
+  showTokenWarningBanner: function() {
+    // 既存バナーを削除
+    var existing = document.getElementById('tokenWarningBanner');
+    if (existing) existing.remove();
+
+    var warnings = this._tokenWarnings;
+    if (!warnings || warnings.length === 0) return;
+
+    // compose画面でのみ表示
+    if (App.state.currentScreen !== 'compose') return;
+
+    var self = this;
+    var banner = document.createElement('div');
+    banner.id = 'tokenWarningBanner';
+
+    var html = '';
+    warnings.forEach(function(w) {
+      var bgColor, borderColor, textColor, icon;
+      
+      if (w.status === 'expired') {
+        bgColor = 'var(--error-bg)';
+        borderColor = 'var(--error-color)';
+        textColor = 'var(--error-color)';
+        icon = '🚨';
+      } else if (w.status === 'critical') {
+        bgColor = 'var(--warning-bg)';
+        borderColor = 'var(--warning-color)';
+        textColor = '#92400e';
+        icon = '⚠️';
+      } else {
+        bgColor = 'var(--info-bg)';
+        borderColor = 'var(--info-color)';
+        textColor = 'var(--info-color)';
+        icon = 'ℹ️';
+      }
+
+      html += '<div style="padding:12px 16px;background:' + bgColor + ';border:1px solid ' + borderColor + ';border-radius:var(--radius-md);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:13px;color:' + textColor + ';font-weight:600;">' +
+            icon + ' ' + (w.message || '') +
+          '</div>' +
+        '</div>';
+      
+      if (w.status === 'expired' || w.status === 'critical') {
+        html += '<button class="token-reauth-btn btn btn-small" data-account-id="' + w.accountId + '" style="flex-shrink:0;background:' + textColor + ';color:#fff;border:none;font-weight:600;">再認証</button>';
+      }
+      
+      html += '</div>';
+    });
+
+    banner.innerHTML = html;
+    banner.style.cssText = 'margin:16px 16px 0;';
+
+    var composeArea = document.querySelector('.compose-area');
+    if (composeArea) {
+      composeArea.insertBefore(banner, composeArea.firstChild);
+    }
+
+    // 再認証ボタンイベント
+    banner.querySelectorAll('.token-reauth-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        App.showScreen('settings');
+      });
+    });
+  },
+
+  // -----------------------------------------
+  // 3-5. 投稿テンプレート機能
+  // -----------------------------------------
+  
+  TEMPLATES_KEY: 'threads_post_templates',
+
+  getTemplates: function() {
+    try {
+      var json = localStorage.getItem(this.TEMPLATES_KEY);
+      if (json) return JSON.parse(json);
+    } catch (e) {}
+    return [];
+  },
+
+  saveTemplates: function(templates) {
+    localStorage.setItem(this.TEMPLATES_KEY, JSON.stringify(templates));
+  },
+
+  // テンプレートボタンHTML（投稿フォームに挿入）
+  renderTemplateButton: function() {
+    return '<div style="display:flex;justify-content:flex-end;margin-bottom:8px;gap:8px;">' +
+      '<button type="button" id="loadTemplateBtn" class="template-action-btn" title="テンプレートから読み込み">📂 テンプレート</button>' +
+      '<button type="button" id="saveTemplateBtn" class="template-action-btn" title="テンプレートとして保存">💾 保存</button>' +
+    '</div>';
+  },
+
+  // テンプレート読み込みモーダル
+  showLoadTemplateModal: function() {
+    var self = this;
+    var templates = this.getTemplates();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'templateModal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:1000;padding:20px;';
+
+    var listHtml = '';
+    if (templates.length === 0) {
+      listHtml = '<div style="text-align:center;padding:32px;color:var(--text-tertiary);">' +
+        '<div style="font-size:40px;margin-bottom:12px;">📝</div>' +
+        '<div style="font-size:14px;">テンプレートがありません</div>' +
+        '<div style="font-size:12px;margin-top:4px;">投稿作成画面で「💾 保存」からテンプレートを作成できます</div>' +
+      '</div>';
+    } else {
+      templates.forEach(function(t, i) {
+        var preview = (t.text || '').substring(0, 60);
+        if ((t.text || '').length > 60) preview += '...';
+        var mediaIcon = t.mediaUrl ? (t.mediaType === 'VIDEO' ? ' 🎬' : ' 📷') : '';
+        var dateStr = t.createdAt ? new Date(t.createdAt).toLocaleDateString('ja-JP') : '';
+
+        listHtml += '<div class="template-item" data-index="' + i + '" style="padding:14px;border-bottom:1px solid var(--border-light);cursor:pointer;transition:background 0.15s;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:14px;font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + 
+                App.escapeHtml(t.name || '無題のテンプレート') + mediaIcon +
+              '</div>' +
+              '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">' + App.escapeHtml(preview) + '</div>' +
+              '<div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">' + dateStr + '</div>' +
+            '</div>' +
+            '<button class="template-delete-btn" data-index="' + i + '" style="width:28px;height:28px;border-radius:50%;border:none;background:var(--error-bg);color:var(--error-color);font-size:12px;cursor:pointer;flex-shrink:0;">✕</button>' +
+          '</div>' +
+        '</div>';
+      });
+    }
+
+    overlay.innerHTML =
+      '<div style="background:var(--bg-primary);border-radius:var(--radius-xl);max-width:450px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;">' +
+        '<div style="padding:20px 20px 16px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">' +
+          '<h3 style="margin:0;font-size:18px;font-weight:700;">テンプレート</h3>' +
+          '<button id="closeTemplateModal" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text-tertiary);padding:4px;">✕</button>' +
+        '</div>' +
+        '<div style="overflow-y:auto;flex:1;">' +
+          listHtml +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    // 閉じる
+    document.getElementById('closeTemplateModal').addEventListener('click', function() {
+      overlay.remove();
+    });
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    // テンプレート選択
+    overlay.querySelectorAll('.template-item').forEach(function(item) {
+      item.addEventListener('click', function(e) {
+        // 削除ボタンのクリックは無視
+        if (e.target.classList.contains('template-delete-btn')) return;
+        
+        var index = parseInt(this.getAttribute('data-index'));
+        var template = templates[index];
+        if (template) {
+          self.applyTemplate(template);
+          overlay.remove();
+          App.showToast('テンプレートを読み込みました', 'success');
+        }
+      });
+    });
+
+    // テンプレート削除
+    overlay.querySelectorAll('.template-delete-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var index = parseInt(this.getAttribute('data-index'));
+        if (confirm('「' + (templates[index].name || '無題') + '」を削除しますか？')) {
+          templates.splice(index, 1);
+          self.saveTemplates(templates);
+          overlay.remove();
+          self.showLoadTemplateModal(); // 再表示
+          App.showToast('テンプレートを削除しました', 'success');
+        }
+      });
+    });
+  },
+
+  // テンプレートを投稿フォームに適用
+  applyTemplate: function(template) {
+    var postText = document.getElementById('postText');
+    if (postText && template.text) {
+      postText.value = template.text;
+      var charCount = document.getElementById('charCount');
+      if (charCount) charCount.textContent = template.text.length;
+    }
+    
+    if (template.mediaUrl) {
+      App.showMediaPreview('single', template.mediaUrl, template.mediaType || 'IMAGE');
+    }
+  },
+
+  // 現在の投稿内容をテンプレートとして保存
+  showSaveTemplateModal: function() {
+    var self = this;
+    
+    // 現在の投稿内容を取得
+    var postText = document.getElementById('postText');
+    var text = postText ? postText.value.trim() : '';
+    var mediaUrl = '';
+    var mediaType = '';
+    
+    var mediaUrlEl = document.querySelector('.final-media-url[data-prefix="single"]');
+    var mediaTypeEl = document.querySelector('.final-media-type[data-prefix="single"]');
+    if (mediaUrlEl) mediaUrl = mediaUrlEl.value;
+    if (mediaTypeEl) mediaType = mediaTypeEl.value;
+
+    if (!text && !mediaUrl) {
+      App.showToast('保存する内容がありません', 'error');
+      return;
+    }
+
+    var overlay = document.createElement('div');
+    overlay.id = 'saveTemplateModal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:1000;padding:20px;';
+
+    var preview = text.substring(0, 60);
+    if (text.length > 60) preview += '...';
+
+    overlay.innerHTML =
+      '<div style="background:var(--bg-primary);border-radius:var(--radius-xl);padding:24px;max-width:400px;width:100%;">' +
+        '<h3 style="margin:0 0 16px;font-size:18px;font-weight:700;">テンプレートとして保存</h3>' +
+        '<div style="margin-bottom:16px;">' +
+          '<label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">テンプレート名</label>' +
+          '<input type="text" id="templateNameInput" class="input" placeholder="例: 朝のあいさつ" style="font-size:14px;" value="">' +
+        '</div>' +
+        '<div style="background:var(--bg-secondary);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
+          '<div style="font-size:11px;color:var(--text-tertiary);margin-bottom:4px;">プレビュー</div>' +
+          App.escapeHtml(preview) +
+          (mediaUrl ? '<br><span style="font-size:11px;">' + (mediaType === 'VIDEO' ? '🎬 動画あり' : '📷 画像あり') + '</span>' : '') +
+        '</div>' +
+        '<div style="display:flex;gap:8px;">' +
+          '<button id="cancelSaveTemplate" class="btn btn-secondary" style="flex:1;">キャンセル</button>' +
+          '<button id="confirmSaveTemplate" class="btn btn-primary" style="flex:1;">保存</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    document.getElementById('cancelSaveTemplate').addEventListener('click', function() {
+      overlay.remove();
+    });
+
+    document.getElementById('confirmSaveTemplate').addEventListener('click', function() {
+      var name = document.getElementById('templateNameInput').value.trim();
+      if (!name) {
+        name = preview.substring(0, 20) || '無題のテンプレート';
+      }
+
+      var templates = self.getTemplates();
+      templates.unshift({
+        name: name,
+        text: text,
+        mediaUrl: mediaUrl,
+        mediaType: mediaType,
+        createdAt: new Date().toISOString()
+      });
+
+      // 最大20件に制限
+      if (templates.length > 20) {
+        templates = templates.slice(0, 20);
+      }
+
+      self.saveTemplates(templates);
+      overlay.remove();
+      App.showToast('テンプレートを保存しました', 'success');
+    });
+
+    // フォーカス
+    setTimeout(function() {
+      document.getElementById('templateNameInput').focus();
+    }, 100);
+  },
+
+  // テンプレートボタンのイベントをバインド
+  bindTemplateEvents: function() {
+    var self = this;
+
+    var loadBtn = document.getElementById('loadTemplateBtn');
+    if (loadBtn) {
+      loadBtn.addEventListener('click', function() {
+        self.showLoadTemplateModal();
+      });
+    }
+
+    var saveBtn = document.getElementById('saveTemplateBtn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function() {
+        self.showSaveTemplateModal();
+      });
+    }
+  },
+
+  // -----------------------------------------
+  // 3-2. 分析データ自動蓄積（トリガーから呼ばれる）
+  //      フロント側: 簡易グラフ表示
+  // -----------------------------------------
+
+  renderInsightsChart: function(analyticsData) {
+    if (!analyticsData || analyticsData.length === 0) {
+      return '<div style="text-align:center;padding:20px;color:var(--text-tertiary);">データが不足しています</div>';
+    }
+
+    // 直近7日間のビューを棒グラフで表示
+    var maxViews = 0;
+    var chartData = analyticsData.slice(0, 7).reverse();
+    
+    chartData.forEach(function(d) {
+      if (d.views > maxViews) maxViews = d.views;
+    });
+
+    if (maxViews === 0) maxViews = 1;
+
+    var html = '<div style="margin:16px 0;">' +
+      '<div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:12px;">投稿別ビュー数</div>' +
+      '<div style="display:flex;align-items:flex-end;gap:6px;height:120px;">';
+
+    chartData.forEach(function(d) {
+      var height = Math.max(4, Math.round((d.views / maxViews) * 100));
+      var dateLabel = d.date ? new Date(d.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }) : '';
+      
+      html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">' +
+        '<div style="font-size:10px;color:var(--text-tertiary);">' + (d.views || 0) + '</div>' +
+        '<div style="width:100%;height:' + height + 'px;background:linear-gradient(180deg, var(--accent-color) 0%, var(--text-tertiary) 100%);border-radius:4px 4px 0 0;transition:height 0.3s;"></div>' +
+        '<div style="font-size:9px;color:var(--text-tertiary);white-space:nowrap;">' + dateLabel + '</div>' +
+      '</div>';
+    });
+
+    html += '</div></div>';
+    return html;
+  },
+
+  // -----------------------------------------
+  // Phase 3 初期化
+  // -----------------------------------------
+  init: function() {
+    console.log('Phase3 初期化完了');
+  }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  Phase3.init();
+});
+
+</script>
