@@ -650,7 +650,7 @@ App.showImportAccountModal = function() {
       
       '<div style="margin-bottom:16px;">' +
         '<label style="font-size:14px;font-weight:600;display:block;margin-bottom:8px;">スプレッドシートID</label>' +
-        '<input type="text" id="importSheetId" class="input" placeholder="例: 1AbCdEfG..." style="font-size:14px;">' +
+        '<input type="text" id="importSheetId" class="input" placeholder="https://docs.google.com/spreadsheets/d/xxxxx/edit" style="font-size:14px;">' +
         '<div style="font-size:12px;color:#666;margin-top:4px;">※ スプシURLの /d/ と /edit の間の文字列</div>' +
       '</div>' +
       
@@ -676,7 +676,12 @@ App.showImportAccountModal = function() {
   
   // インポート実行
   document.getElementById('executeImportBtn').addEventListener('click', function() {
-    var sourceSheetId = document.getElementById('importSheetId').value.trim();
+    var rawInput = document.getElementById('importSheetId').value.trim();
+        var sourceSheetId = rawInput;
+        var urlMatch = rawInput.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+        if (urlMatch) {
+          sourceSheetId = urlMatch[1];
+        }
     
     if (!sourceSheetId) {
       self.showToast('スプレッドシートIDを入力してください', 'error');
