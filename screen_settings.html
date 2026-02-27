@@ -57,10 +57,18 @@ App.renderSettingsContent = function() {
           '</div>' +
           '<div class="guide-step">' +
             '<div class="guide-step-header">' +
-              '<div class="guide-step-number">2</div>' +
+              '<div class="guide-step-number' + (this.state.settings && this.state.settings.app_id ? ' done' : '') + '">' + (this.state.settings && this.state.settings.app_id ? '\u2713' : '2') + '</div>' +
               '<div class="guide-step-title">Meta Developer \u30A2\u30D7\u30EA\u8A2D\u5B9A</div>' +
             '</div>' +
-            '<div class="guide-step-text"><a href="https://developers.facebook.com/" target="_blank" style="color:#0ea5e9;">Meta for Developers</a>\u3067\u30A2\u30D7\u30EA\u3092\u4F5C\u6210\u3057\u3001Threads API\u306E\u6A29\u9650\u3092\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u30B9\u30D7\u30EC\u30C3\u30C9\u30B7\u30FC\u30C8\u306E\u8A2D\u5B9A\u30B7\u30FC\u30C8\u306BApp ID\u3068App Secret\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002</div>' +
+            '<div class="guide-step-text"><a href="https://developers.facebook.com/" target="_blank" style="color:#0ea5e9;">Meta for Developers</a>\u3067\u30A2\u30D7\u30EA\u3092\u4F5C\u6210\u3057\u3001Threads API\u306E\u6A29\u9650\u3092\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044\u3002</div>' +
+            '<div class="guide-input-group">' +
+              '<div class="guide-input-label">App ID</div>' +
+              '<input type="text" id="appIdInput" class="input" placeholder="Meta\u30A2\u30D7\u30EA\u306EApp ID" style="font-size:13px;margin-bottom:8px;" value="' + ((this.state.settings && this.state.settings.app_id) || '') + '">' +
+              '<div class="guide-input-label">App Secret</div>' +
+              '<input type="password" id="appSecretInput" class="input" placeholder="Meta\u30A2\u30D7\u30EA\u306EApp Secret" style="font-size:13px;margin-bottom:8px;" value="' + ((this.state.settings && this.state.settings.app_secret) || '') + '">' +
+              '<button id="saveApiKeysBtn" class="btn btn-primary btn-small btn-full">\u4FDD\u5B58</button>' +
+              '<div id="apiKeysStatus" class="guide-status"></div>' +
+            '</div>' +
           '</div>' +
           '<div class="guide-step">' +
             '<div class="guide-step-header">' +
@@ -205,6 +213,34 @@ App.bindSettingsEvents = function() {
           self.showScreen("settings");
           self.showToast("\u63A5\u7D9A\u3092\u89E3\u9664\u3057\u307E\u3057\u305F", "success");
         }
+      });
+    }
+    var saveApiKeysBtn = document.getElementById("saveApiKeysBtn");
+    if (saveApiKeysBtn) {
+      saveApiKeysBtn.addEventListener("click", function() {
+        var appId = document.getElementById("appIdInput").value.trim();
+        var appSecret = document.getElementById("appSecretInput").value.trim();
+        var status = document.getElementById("apiKeysStatus");
+        if (!appId || !appSecret) {
+          status.textContent = "App ID\u3068App Secret\u306E\u4E21\u65B9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044";
+          status.style.color = "#dc2626";
+          return;
+        }
+        status.textContent = "\u4FDD\u5B58\u4E2D...";
+        status.style.color = "#0369a1";
+        self.api("saveSettings", { app_id: appId, app_secret: appSecret })
+          .then(function() {
+            self.state.settings = self.state.settings || {};
+            self.state.settings.app_id = appId;
+            self.state.settings.app_secret = appSecret;
+            status.textContent = "\u2705 \u4FDD\u5B58\u3057\u307E\u3057\u305F\uFF01";
+            status.style.color = "#16a34a";
+            App.showToast("API\u8A2D\u5B9A\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F", "success");
+          })
+          .catch(function(err) {
+            status.textContent = "\u30A8\u30E9\u30FC: " + err.message;
+            status.style.color = "#dc2626";
+          });
       });
     }
     var guideUri = document.getElementById("guideRedirectUri");
